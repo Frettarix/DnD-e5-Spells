@@ -6,6 +6,6 @@ RUN pip install git+https://gitlab.com/obuilds/public/pytube
 RUN pip install validator-collection
 
 WORKDIR /usr/src/dnd_spells
-COPY . .
+COPY *.py .
 
-CMD [ "python", "/usr/src/dnd_spells/bot.py" ]
+ENTRYPOINT [ "python", "/usr/src/dnd_spells/bot.py" ]

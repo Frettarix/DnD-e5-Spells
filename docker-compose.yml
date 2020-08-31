@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_DB=dnd_spells
+      - POSTGRES_USER=wizard
+      - POSTGRES_PASSWORD=wizard
+    volumes:
+      - ./dnd_db:/var/lib/pgsql
+  bot:
+    build: .
+    depends_on:
+      - db
