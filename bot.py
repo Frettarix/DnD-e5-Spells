@@ -1,6 +1,7 @@
 import threading
 from telegram import Bot, Update, ParseMode
 from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater
+import random
 
 from setup import TOKEN
 # from database import save_to_mongo, DatabaseUnavaliable
@@ -20,18 +21,22 @@ def overall_logging(handler):
         return handler(*args, **kwargs)
     return inner
 
-# @overall_logging
-# def start(update: Update, context: CallbackContext):
-#     """Send a message when the command /start is issued."""
-#     update.message.reply_text(
-#     """
-#     Hello, adventurer!
-# First, use
-# /class <your class> -- set your class
-# Next,
-# /spells -- to get all the spells of your class
-# """
-#     )
+def replay_for_class(user_class):
+    bard = ['🪕']
+    druid = ['🌿', '🌱', '🍄']
+    monk = ['🧘', '🧘🏻', '🧘🏼', '🧘🏽', '🧘🏾', '🧘🏿', '🧘‍♂️', '🧘🏻‍♂️', '🧘🏼‍♂️', '🧘🏽‍♂️', '🧘🏾‍♂️', '🧘🏿‍♂️', '🧘‍♀️', '🧘🏻‍♀️', '🧘🏼‍♀️', '🧘🏽‍♀️', '🧘🏾‍♀️', '🧘🏿‍♀️']
+    paladin = ['🗡️', '⚔️', '🛡️']
+    wizard = ['🧙', '🧙🏻', '🧙🏼', '🧙🏽', '🧙🏾', '🧙🏿', '🧙‍♂️', '🧙🏻‍♂️', '🧙🏼‍♂️', '🧙🏽‍♂️', '🧙🏾‍♂️', '🧙🏿‍♂️', '🧙‍♀️', '🧙🏻‍♀️', '🧙🏼‍♀️', '🧙🏽‍♀️', '🧙🏾‍♀️', '🧙🏿‍♀️', '⚗️', '📜', '🔮']
+    if user_class.lower() == 'bard':
+        return random.choice(bard)
+    elif user_class.lower() == 'druid':
+        return random.choice(druid)
+    elif user_class.lower() == 'monk':
+        return random.choice(monk)
+    elif user_class.lower() in ['paladin', 'ranger', 'warlock', 'fighter', 'cleric', 'rogue']:
+        return random.choice(paladin)
+    elif user_class.lower() in ['wizard', 'sorcerer']:
+        return random.choice(wizard)
 
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
@@ -62,9 +67,13 @@ def help_msg(update: Update, context: CallbackContext):
 
 @overall_logging
 def settings(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        f'Class: {context.user_data["class"]}'
-    )
+    user_class = context.user_data.get("class")
+    if user_class:
+        msg = f'Class: {user_class.capitalize()} {replay_for_class(user_class)}'
+    else:
+        msg = 'No class specified'
+    update.message.reply_text(msg)
+
 
 @overall_logging
 def set_class(update: Update, context: CallbackContext):
@@ -84,15 +93,11 @@ def set_class(update: Update, context: CallbackContext):
         update.message.reply_text('Usage: /class <your class>')
 
     context.user_data['class'] = user_class
+    update.message.reply_text(replay_for_class(user_class))
 
 @overall_logging
 def spells(update: Update, context: CallbackContext):
     update.message.reply_text('Under construction')
-
-# @overall_logging
-# def echo(update: Update, context: CallbackContext):
-#     """Echo the user message."""
-#     update.message.reply_text(update.message.text)
 
 @overall_logging
 def error(update: Update, context: CallbackContext):
