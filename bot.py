@@ -22,19 +22,34 @@ def overall_logging(handler):
     return inner
 
 def replay_for_class(user_class):
-    bard = ['🪕']
+    bard = ['🪕', '🎸👨‍🎤']
+    cleric = ['🙏']
     druid = ['🌿', '🌱', '🍄']
+    barbarian = ['🪓', '🤬']
     monk = ['🧘', '🧘🏻', '🧘🏼', '🧘🏽', '🧘🏾', '🧘🏿', '🧘‍♂️', '🧘🏻‍♂️', '🧘🏼‍♂️', '🧘🏽‍♂️', '🧘🏾‍♂️', '🧘🏿‍♂️', '🧘‍♀️', '🧘🏻‍♀️', '🧘🏼‍♀️', '🧘🏽‍♀️', '🧘🏾‍♀️', '🧘🏿‍♀️']
-    paladin = ['🗡️', '⚔️', '🛡️']
+    ranger = ['🏹']
+    rogue = ['🔪']
+    paladin = ['🗡️', '⚔️', '🛡️', '🌅']
+    warlock = ['🗡️', '⚔️']
     wizard = ['🧙', '🧙🏻', '🧙🏼', '🧙🏽', '🧙🏾', '🧙🏿', '🧙‍♂️', '🧙🏻‍♂️', '🧙🏼‍♂️', '🧙🏽‍♂️', '🧙🏾‍♂️', '🧙🏿‍♂️', '🧙‍♀️', '🧙🏻‍♀️', '🧙🏼‍♀️', '🧙🏽‍♀️', '🧙🏾‍♀️', '🧙🏿‍♀️', '⚗️', '📜', '🔮']
     if user_class.lower() == 'bard':
         return random.choice(bard)
+    elif user_class.lower() == 'cleric':
+        return random.choice(cleric)
+    elif user_class.lower() == 'barbarian':
+        return random.choice(barbarian)
     elif user_class.lower() == 'druid':
         return random.choice(druid)
     elif user_class.lower() == 'monk':
         return random.choice(monk)
-    elif user_class.lower() in ['paladin', 'ranger', 'warlock', 'fighter', 'cleric', 'rogue']:
+    elif user_class.lower() == 'ranger':
+        return random.choice(ranger)
+    elif user_class.lower() == 'rogue':
+        return random.choice(rogue)
+    elif user_class.lower() == 'paladin':
         return random.choice(paladin)
+    elif user_class.lower() in ['warlock', 'fighter']:
+        return random.choice(warlock)
     elif user_class.lower() in ['wizard', 'sorcerer']:
         return random.choice(wizard)
 
