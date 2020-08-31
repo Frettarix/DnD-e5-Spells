@@ -52,7 +52,7 @@ def help_msg(update: Update, context: CallbackContext):
           Command with spell name in double brackets gets the spell description if it exists.
 
         • /spells level=2 & ritual=true | concentration=true
-          Command with filters and boolean operators *AND/OR* gets satisfying spells.
+          Command with filters and boolean *AND* operator gets satisfying spells.
 
     *Filters:*
 
@@ -97,7 +97,13 @@ def set_class(update: Update, context: CallbackContext):
 
 @overall_logging
 def spells(update: Update, context: CallbackContext):
-    update.message.reply_text('Under construction')
+    user_input = context.args
+    if user_input:
+        update.message.reply_text(f'You typed: {user_input}')
+    else:
+        update.message.reply_text(f'No arguments')
+    # if '=' in user_input:
+    #     update.message.reply_text(f'You typed: {user_input.sp}')
 
 @overall_logging
 def error(update: Update, context: CallbackContext):
@@ -111,7 +117,7 @@ def main():
 
     updater.dispatcher.add_handler(CommandHandler('start', help_msg))
     updater.dispatcher.add_handler(CommandHandler('class', set_class, pass_args=True))
-    updater.dispatcher.add_handler(CommandHandler('spells', spells))
+    updater.dispatcher.add_handler(CommandHandler('spells', spells, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('settings', settings))
     updater.dispatcher.add_handler(CommandHandler('help', help_msg))
 
