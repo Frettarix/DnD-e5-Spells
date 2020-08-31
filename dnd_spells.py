@@ -10,7 +10,6 @@ logger = createLogger(__name__)
 class DndSpellsError(Exception):
     pass
 
-
 class DndSpellsRequestError(DndSpellsError):
     def __init__(self, body):
         self.body = json.loads(body)
@@ -63,7 +62,7 @@ def get_spells_from_API():
             api_request(urljoin(spells_url_path, spell['index']), 'GET').json()
         )
     # print(spells)
-    return spells
+    return {'spells': spells}
 
 def get_spells(spell=None, cache=True, cache_path='.cached-spells') -> dict:
     """
@@ -80,8 +79,8 @@ def get_spells(spell=None, cache=True, cache_path='.cached-spells') -> dict:
     if not spells:
         spells = get_spells_from_API()
 
-    if cache:
-        cache_spells(spells, cache_path)
+        if cache:
+            cache_spells(spells, cache_path)
 
     if spell:
         for _s in spells:
@@ -91,70 +90,28 @@ def get_spells(spell=None, cache=True, cache_path='.cached-spells') -> dict:
         raise DndSpellsError(f'No {spell} in spells')
     return spells
 
-# class Spell:
-#     def __init__(self, **fields):
-#         for x in fields:
-#             setattr(self, x, fields[x])
+class Spell:
+    def __init__(self, **fields):
+        for f in fields:
+            if f == 'desc':
+                self.desc = '\n'.join([x for x in fields[f]])
+            setattr(self, f, fields[f])
 
-#     def __str__(self):
-#         return f'{self.name}\nlevel: {self.level}\nschool: {self.school["name"]}'
+    def full_str(self):
+        msg = '\n'
+        for key, val in self.__dict__.items():
+            msg += f'{key}: {val}\n'
+        return msg
 
-# class Spell:
-#     def __init__(self, index: str, name: str, desc: list, higher_level: list,
-#                     page: str, range: str, components: str, material: str, ritual: str,
-#                     duration: str, concentration: str, casting_time: str, level: str,
-#                     school: dict, classes: list, subclasses: list, url: str):
-#         self.index = index
-#         self.name = name
-#         self.desc = desc
-#         self.higher_level = higher_level
-#         self.page = page
-#         self.range = range
-#         self.components = components
-#         self.material = material
-#         self.ritual = ritual
-#         self.duration = duration
-#         self.concentration = concentration
-#         self.casting_time = casting_time
-#         self.level =level
-#         self.school = school
-#         self.classes = classes
-#         self.subclasses = subclasses
-#         self.url = url
+    def __str__(self):
+        return f'{self.name}'
 
-# class Spell:
-#     def __init__(self, index: str, name: str, desc: list, higher_level: list,
-#                     page: str, range: str, components: str, material: str, ritual: str,
-#                     duration: str, concentration: str, casting_time: str, level: str,
-#                     school: dict, classes: list, subclasses: list, url: str):
-#         self.index = index
-#         self.name = name
-#         self.desc = desc
-#         self.higher_level = higher_level
-#         self.page = page
-#         self.range = range
-#         self.components = components
-#         self.material = material
-#         self.ritual = ritual
-#         self.duration = duration
-#         self.concentration = concentration
-#         self.casting_time = casting_time
-#         self.level =level
-#         self.school = school
-#         self.classes = classes
-#         self.subclasses = subclasses
-#         self.url = url
-
-
-#     def __str__(self):
-#         return f'{self.name}\nlevel: {self.level}\nschool: {self.school["name"]}'
 
 
 all_spells = get_spells()
 # print(all_spells)
-# for x in all_the_spells['results']:
-#     print(x)
-    # Spell(**x)
+for x in all_spells['spells']:
+    print(Spell(**x).full_str())
 
 
 # spell = Spell(**get_spell(all_the_spells['results'][0]['index']))

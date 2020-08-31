@@ -33,14 +33,28 @@ def overall_logging(handler):
 @overall_logging
 def start(update: Update, context: CallbackContext):
     """Send a message when the command /start is issued."""
-    update.message.reply_text("""
+    update.message.reply_text(
+    """
     Hello, adventurer!
     First, use
-    /class <your class> -- to set your class
+    /class <your class> -- set your class
     Next,
     /spells -- to get all the spells of your class
     """
     )
+
+@overall_logging
+def help(update: Update, context: CallbackContext):
+    update.message.reply_text(
+    """
+    /class <your class> -- set your class
+    /spells -- to get all the spells of your class
+    """
+    )
+
+@overall_logging
+def settings(update: Update, context: CallbackContext):
+    pass
 
 @overall_logging
 def set_class(update: Update, context: CallbackContext):
