@@ -1,4 +1,5 @@
-# D&D e5 Spells
+# D&D e5 Spells Bot
+
 Getting spells from www.dnd5eapi.co through API
 
 ## API description

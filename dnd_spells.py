@@ -1,11 +1,15 @@
 import requests
 from urllib.parse import urljoin
 import json
-import logging
+
+from common import createLogger
+
+logger = createLogger(__name__)
 
 
 class DndSpellsError(Exception):
     pass
+
 
 class DndSpellsRequestError(DndSpellsError):
     def __init__(self, body):
@@ -15,19 +19,6 @@ class DndSpellsRequestError(DndSpellsError):
         self.reason = self.body["error"].get("reason")
     def __str__(self):
         return f'{self.body}'
-
-
-def createLogger(name, lvl=logging.DEBUG):
-    logger = logging.getLogger(name)
-    logger.setLevel(lvl)
-    ch = logging.StreamHandler()
-    ch.setLevel(lvl)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    return logger
-
-logger = createLogger(__name__)
 
 
 def get_cached_spells(cache_path='.cached-spells') -> dict:
@@ -66,9 +57,9 @@ def get_spells_from_API():
     spells_url_path = 'spells/'
     _spells = api_request(spells_url_path, 'GET').json()
 
-    spells = dict()
+    spells = []
     for spell in _spells['results']:
-        spells.update(
+        spells.append(
             api_request(urljoin(spells_url_path, spell['index']), 'GET').json()
         )
     # print(spells)
@@ -131,32 +122,32 @@ def get_spells(spell=None, cache=True, cache_path='.cached-spells') -> dict:
 #         self.subclasses = subclasses
 #         self.url = url
 
-class Spell:
-    def __init__(self, index: str, name: str, desc: list, higher_level: list,
-                    page: str, range: str, components: str, material: str, ritual: str,
-                    duration: str, concentration: str, casting_time: str, level: str,
-                    school: dict, classes: list, subclasses: list, url: str):
-        self.index = index
-        self.name = name
-        self.desc = desc
-        self.higher_level = higher_level
-        self.page = page
-        self.range = range
-        self.components = components
-        self.material = material
-        self.ritual = ritual
-        self.duration = duration
-        self.concentration = concentration
-        self.casting_time = casting_time
-        self.level =level
-        self.school = school
-        self.classes = classes
-        self.subclasses = subclasses
-        self.url = url
+# class Spell:
+#     def __init__(self, index: str, name: str, desc: list, higher_level: list,
+#                     page: str, range: str, components: str, material: str, ritual: str,
+#                     duration: str, concentration: str, casting_time: str, level: str,
+#                     school: dict, classes: list, subclasses: list, url: str):
+#         self.index = index
+#         self.name = name
+#         self.desc = desc
+#         self.higher_level = higher_level
+#         self.page = page
+#         self.range = range
+#         self.components = components
+#         self.material = material
+#         self.ritual = ritual
+#         self.duration = duration
+#         self.concentration = concentration
+#         self.casting_time = casting_time
+#         self.level =level
+#         self.school = school
+#         self.classes = classes
+#         self.subclasses = subclasses
+#         self.url = url
 
 
-    def __str__(self):
-        return f'{self.name}\nlevel: {self.level}\nschool: {self.school["name"]}'
+#     def __str__(self):
+#         return f'{self.name}\nlevel: {self.level}\nschool: {self.school["name"]}'
 
 
 all_spells = get_spells()
