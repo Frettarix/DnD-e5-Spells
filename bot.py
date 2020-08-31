@@ -15,19 +15,7 @@ def overall_logging(handler):
     def inner(*args, **kwargs):
         update = args[0]
         if update and hasattr(update, 'message') and hasattr(update, 'effective_user'):
-            log_info = {
-                'time': str(update.message.date),
-                'handler': handler.__name__,
-                'update_id': update.update_id,
-                'message': {
-                    'message_id': update.message.message_id,
-                    'text': update.message.text,
-                },
-                'user': {
-                    'user_id': update.effective_user.id,
-                    'username': update.effective_user.username
-                }
-            }
+            log_info = f'handler: {handler.__name__}, message: "{update.message.text}", user: {update.effective_user.username}'
             logger.info(log_info)
             # try:
             #     # TODO: implement multithreading for logging
@@ -45,18 +33,31 @@ def overall_logging(handler):
 @overall_logging
 def start(update: Update, context: CallbackContext):
     """Send a message when the command /start is issued."""
-    update.message.reply_text(
-        """Hello, adventurer!
-        First, use
-        /class <your class> -- to set your class
-        Next,
-        /spells -- to get all the spells of your class
-        """
+    update.message.reply_text("""
+    Hello, adventurer!
+    First, use
+    /class <your class> -- to set your class
+    Next,
+    /spells -- to get all the spells of your class
+    """
     )
 
 @overall_logging
 def set_class(update: Update, context: CallbackContext):
-    user_class = update.message.text
+    chat_id = update.message.chat_id
+    classes = [
+        'barbarian', 'bard', 'cleric', 'druid', 'fighter', 'monk', 'paladin',
+        'ranger', 'rogue', 'sorcerer', 'warlock', 'wizard']
+
+    # args[0] should contain the class name
+    try:
+        user_class = context.args[0].lower()
+        if user_class not in classes:
+            update.message.reply_text(f'Wrong class: {user_class}.\nAvaliable D&D classes: {", ".join([x for x in classes])}')
+            return
+    except (IndexError, ValueError):
+        update.message.reply_text('Usage: /class <your class>')
+
     update.message.reply_text(f'You typed: {user_class}')
 
 @overall_logging
@@ -79,7 +80,7 @@ def main():
     updater = Updater(bot=bot, use_context=True)
 
     updater.dispatcher.add_handler(CommandHandler('start', start))
-    updater.dispatcher.add_handler(CommandHandler('class', set_class))
+    updater.dispatcher.add_handler(CommandHandler('class', set_class, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('spells', spells))
 
     updater.dispatcher.add_error_handler(error)
