@@ -105,11 +105,11 @@ class Spell:
 
     def is_fit(self, filter: dict):
         field, val = filter.items()
-        fields = list(vars(self).keys()
-        if field in fields:
-            if getattr(self, field) == val:
-                return True
-        return False
+        fields = list(vars(self).keys())
+        # if field in fields:
+        #     if getattr(self, field) == val:
+        #         return True
+        # return False
 
     def __str__(self):
         return f'{self.name}'

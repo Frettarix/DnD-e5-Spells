@@ -16,7 +16,19 @@ def overall_logging(handler):
     def inner(*args, **kwargs):
         update = args[0]
         if update and hasattr(update, 'message') and hasattr(update, 'effective_user'):
-            log_info = f'handler: {handler.__name__}, message: "{update.message.text}", user: {update.effective_user.username}'
+            log_info = {
+                'time': str(update.message.date),
+                'handler': handler.__name__,
+                'update_id': update.update_id,
+                'message': {
+                    'message_id': update.message.message_id,
+                    'text': update.message.text,
+                },
+                'user': {
+                    'user_id': update.effective_user.id,
+                    'username': update.effective_user.username
+                }
+            }
             logger.info(log_info)
         return handler(*args, **kwargs)
     return inner
@@ -89,11 +101,10 @@ def set_class(update: Update, context: CallbackContext):
             _msg = '\n'.join([f'• {x.capitalize()}' for x in classes])
             update.message.reply_text(f'Wrong class: {user_class}.\n\nAvaliable D&D classes: \n\n{_msg}')
             return
+        context.user_data['class'] = user_class
+        update.message.reply_text(replay_for_class(user_class))
     except (IndexError, ValueError):
         update.message.reply_text('Usage: /class <your class>')
-
-    context.user_data['class'] = user_class
-    update.message.reply_text(replay_for_class(user_class))
 
 @overall_logging
 def spells(update: Update, context: CallbackContext):
@@ -102,14 +113,14 @@ def spells(update: Update, context: CallbackContext):
         update.message.reply_text(f'You typed: {user_input}')
     else:
         update.message.reply_text(f'No arguments')
-    # if '=' in user_input:
-    #     update.message.reply_text(f'You typed: {user_input.sp}')
 
 @overall_logging
 def error(update: Update, context: CallbackContext):
-    """Log Errors caused by Updates."""
     logger.warning(f'Update {update} caused error {context.error}')
 
+@overall_logging
+def unknown(update, context):
+    update.message.reply_text('What a spell is this? I do not know this type of magic!')
 
 def main():
     bot = Bot(token=TOKEN)
@@ -120,6 +131,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler('spells', spells, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('settings', settings))
     updater.dispatcher.add_handler(CommandHandler('help', help_msg))
+    updater.dispatcher.add_handler(MessageHandler(Filters.command, unknown))
 
     updater.dispatcher.add_error_handler(error)
     updater.start_polling()
