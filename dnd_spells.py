@@ -6,6 +6,18 @@ from common import createLogger
 
 logger = createLogger(__name__)
 
+class DndSpellsError(Exception):
+    pass
+
+class DndSpellsRequestError(DndSpellsError):
+    def __init__(self, body):
+        self.body = json.loads(body)
+        self.status = self.body["error"]["status"]
+        self.message = self.body["error"]["message"]
+        self.reason = self.body["error"].get("reason")
+    def __str__(self):
+        return f'{self.body}'
+
 
 class Singleton():
     def __new__(cls):
@@ -22,19 +34,6 @@ class DBCarier(Singleton):
     @classmethod
     def __call__(cls):
         print('DB Worker')
-
-class DndSpellsError(Exception):
-    pass
-
-class DndSpellsRequestError(DndSpellsError):
-    def __init__(self, body):
-        self.body = json.loads(body)
-        self.status = self.body["error"]["status"]
-        self.message = self.body["error"]["message"]
-        self.reason = self.body["error"].get("reason")
-    def __str__(self):
-        return f'{self.body}'
-
 
 
 class APICarier(Singleton):
@@ -163,7 +162,6 @@ class Spells:
         msg = '\n'.join([x.__str__() for x in self.spells])
         return f'{len(self.spells)} spells: \n{msg}'
 
-
 class Spell:
     def __init__(self, **fields):
         for f in fields: setattr(self, f, fields[f])
@@ -191,7 +189,6 @@ class Spell:
 
     def __str__(self):
         return f'"{self.name}" (classes: {", ".join([x for x in self.classes])}; level: {self.level}; ritual: {self.ritual}; concentration: {self.concentration})'
-
 
 
 spells = Spells()
