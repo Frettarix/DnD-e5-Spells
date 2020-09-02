@@ -6,7 +6,8 @@ import random
 from setup import TOKEN
 # from database import save_to_mongo, DatabaseUnavaliable
 
-from common import createLogger, norm_query
+from common import createLogger
+from dnd_spells import Parser
 
 
 logger = createLogger(__name__)
@@ -68,17 +69,21 @@ def replay_for_class(user_class):
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
     help_text = """/class <your class> - set your class
-/spells _optional filters_
+/spellbyname <spell name>
 
-    *Query examples:*
+    *Examples:*
 
-        • /spells
-          Command without arguments gets all the spells of your class. If no class specified all the spells shows.
+        • /spellbyname acid arrow
+          Command returns Acid Arrow full description
 
-        • /spells acid arrow
-          Command with spell name gets the spell description if it exists.
+        • /spellbyname acid
+          Command returns links to all the spells with 'acid' in name
 
-        • /spells level=2 & ritual=true & concentration=true
+/spellsearch <filters>
+
+    *Examples:*
+
+        • /spellsearch level=2 & ritual=true
           Command with filters and boolean *AND* operator gets satisfying spells.
 
     *Filters:*
@@ -121,28 +126,27 @@ def set_class(update: Update, context: CallbackContext):
         update.message.reply_text('Usage: /class <your class>')
 
 @overall_logging
-def spells(update: Update, context: CallbackContext):
-    user_input = context.args
-    if user_input:
-        update.message.reply_text(f'You typed: {user_input}')
-        # normed_input = norm_query(user_input)
-        # update.message.reply_text(f'You typed: {normed_input}')
-    else:
-        update.message.reply_text(f'No arguments')
-
-@overall_logging
 def spell_by_name(update: Update, context: CallbackContext):
     """
     /spellbyname <name>
     """
-    pass
+    user_input = context.args
+    if not user_input:
+        update.message.reply_text('Usage: /spellbyname <spell name>')
 
 @overall_logging
 def spell_search(update: Update, context: CallbackContext):
     """
     /spellsearch filter1=var1 & filter2 = var2
     """
-    pass
+    p = Parser()
+    user_input = context.args
+    if user_input:
+        update.message.reply_text(f'You typed: {user_input}')
+        parsed_input = p(" ".join([x for x in user_input]))
+        update.message.reply_text(f'I think it means: {parsed_input}')
+    else:
+        update.message.reply_text('Usage: /spellsearch filter1=var1 & filter2 = var2')
 
 @overall_logging
 def error(update: Update, context: CallbackContext):
@@ -158,7 +162,8 @@ def main():
 
     updater.dispatcher.add_handler(CommandHandler('start', help_msg))
     updater.dispatcher.add_handler(CommandHandler('class', set_class, pass_args=True))
-    updater.dispatcher.add_handler(CommandHandler('spells', spells, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('spellbyname', spell_by_name, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('spellsearch', spell_search, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('settings', settings))
     updater.dispatcher.add_handler(CommandHandler('help', help_msg))
     updater.dispatcher.add_handler(MessageHandler(Filters.command, unknown))
