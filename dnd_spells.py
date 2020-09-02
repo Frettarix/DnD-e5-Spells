@@ -91,18 +91,18 @@ class CacheCarier(Singleton):
 
 class Spells:
     def __init__(self, cache_carier=CacheCarier()):
-        self.api_carier = APICarier()
-        self.cache_carier = cache_carier
-        self.spells = self.__get_spells()
+        self.__api_carier = APICarier()
+        self.__cache_carier = cache_carier
+        self.__spells = self.__get_spells()
         self._cursor = 0
 
     def __get_spells(self):
-        spells = self.cache_carier.get_spells()
+        spells = self.__cache_carier.get_spells()
         if not spells:
             spells = self.__normalize(
-                self.api_carier.get_spells()
+                self.__api_carier.get_spells()
             )
-            self.cache_carier.cache(spells)
+            self.__cache_carier.cache(spells)
         return [self.create_spell(x) for x in spells['spells']]
 
     @classmethod
@@ -159,8 +159,8 @@ class Spells:
         self._cursor += 1
 
     def __str__(self):
-        msg = '\n'.join([x.__str__() for x in self.spells])
-        return f'{len(self.spells)} spells: \n{msg}'
+        msg = '\n'.join([x.__str__() for x in self.__spells])
+        return f'{len(self.__spells)} spells: \n{msg}'
 
 class Spell:
     def __init__(self, **fields):
@@ -192,5 +192,4 @@ class Spell:
 
 
 spells = Spells()
-
 print(spells)
