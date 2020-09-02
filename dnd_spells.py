@@ -38,7 +38,7 @@ class DndSpellsRequestError(DndSpellsError):
 
 
 class APICarier(Singleton):
-    API_SPELLS_URL = 'https://www.dnd5eapi.co/api/spells'
+    API_SPELLS_URL = 'https://www.dnd5eapi.co/api/spells/'
 
     @classmethod
     def get_spells(cls) -> dict:
@@ -91,7 +91,7 @@ class CacheCarier(Singleton):
             logger.warning(f'Can not save token in {cls.cache_path}: {e}')
 
 class Spells:
-    def __init__(self, cache_carier=CacheCarier):
+    def __init__(self, cache_carier=CacheCarier()):
         self.api_carier = APICarier()
         self.cache_carier = cache_carier
         self.spells = self.__get_spells()
@@ -104,8 +104,7 @@ class Spells:
                 self.api_carier.get_spells()
             )
             self.cache_carier.cache(spells)
-
-        return Spells([self.create_spell(x) for x in spells['spells']])
+        return [self.create_spell(x) for x in spells['spells']]
 
     @classmethod
     def create_spell(cls, normed_spell: dict):
@@ -113,22 +112,26 @@ class Spells:
         Firmats some of fields for simplification of working with Spell object
         normed_spell: dict from cache or API that was normalized before
         """
-
-        normed_spell['class'] = [x['name'] for x in normed_spell.pop('classes')]
+        normed_spell['classes'] = [x['name'] for x in normed_spell.pop('classes')]
         normed_spell['desc'] = '\n'.join([line for line in normed_spell['desc']])
-        normed_spell['higher_level'] = '\n'.join([line for line in normed_spell['higher_level']])
-        normed_spell['school'] = [x['name'] for x in normed_spell.pop('school')]
+        if normed_spell['higher_level']:
+            normed_spell['higher_level'] = '\n'.join([line for line in normed_spell['higher_level']])
+        normed_spell['school'] = normed_spell['school']['name']
         normed_spell['subclass'] = [x['name'] for x in normed_spell.pop('subclasses')]
-        for x in normed_spell:
-            x['damage_type'], x['damage_at_slot_level'] = None, None
-            if (_damage := x.pop('damage')):
-                x['damage_type'] = _damage['damage_type']['name']
-                x['damage_at_slot_level'] = _damage.get('damage_at_slot_level')
-            x['dexterity_type'], x['dexterity_success'], x['dexterity_desc'] = None, None, None
-            if (_dc := x.pop('dc')):
-                x['dexterity_type'] = _dc['dc_type']['name']
-                x['dexterity_success'] = _dc.get('dc_success')
-                x['dexterity_desc'] = _dc.get('desc')
+
+        normed_spell['damage_type'], normed_spell['damage_at_slot_level'] = None, None
+        if (_damage := normed_spell.pop('damage')):
+            _damage_name = _damage.get('damage_type')
+            if _damage_name:
+                normed_spell['damage_type'] = _damage_name['name']
+            normed_spell['damage_at_slot_level'] = _damage.get('damage_at_slot_level')
+            normed_spell['damage_at_character_level'] = _damage.get('damage_at_character_level')
+        
+        normed_spell['dexterity_type'], normed_spell['dexterity_success'], normed_spell['dexterity_desc'] = None, None, None
+        if (_dc := normed_spell.pop('dc')):
+            normed_spell['dexterity_type'] = _dc['dc_type']['name']
+            normed_spell['dexterity_success'] = _dc.get('dc_success')
+            normed_spell['dexterity_desc'] = _dc.get('desc')
         return Spell(**normed_spell)
 
     @classmethod
@@ -161,18 +164,9 @@ class Spells:
         return f'{len(self.spells)} spells: \n{msg}'
 
 
-
-
-
 class Spell:
     def __init__(self, **fields):
-        for f in fields:
-            if f == 'desc':
-                self.desc = '\n'.join([x for x in fields[f]])
-            elif f == 'classes':
-                self.classes = [x['name'] for x in fields[f]]
-            else:
-                setattr(self, f, fields[f])
+        for f in fields: setattr(self, f, fields[f])
 
     def full_str(self):
         msg = '\n'
@@ -200,31 +194,6 @@ class Spell:
 
 
 
+spells = Spells()
 
-all_spells = get_spells()
-
-spells = Spells([Spell(**x) for x in all_spells['spells']])
-# print(spells)
-
-fs = spells.get_by(character_class='druid', ritual=True, concentration='false')
-print(fs)
-
-d = APICarier()
-d()
-
-# result = []
-# for x in spells:
-#     if x.is_fit({'level': 2, 'ritual': True}):
-#         result.append(x)
-# print(spells[4].full_str())
-# print(spells[0].is_fit({'level': 2, 'ritual': True}))
-
-# print([x.full_str() for x in result])
-# for x in result:
-#     print(x)
-
-
-# spell = Spell(**get_spell(all_the_spells['results'][0]['index']))
-# print(spell)
-# print(spell.__dict__)
-
+print(spells)
