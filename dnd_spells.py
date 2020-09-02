@@ -105,7 +105,7 @@ class Spells:
             )
             self.cache_carier.cache(spells)
 
-        return Spells([Spell(**x) for x in spells['spells']])
+        return Spells([self.create_spell(x) for x in spells['spells']])
 
     @classmethod
     def create_spell(cls, normed_spell: dict):
@@ -129,7 +129,7 @@ class Spells:
                 x['dexterity_type'] = _dc['dc_type']['name']
                 x['dexterity_success'] = _dc.get('dc_success')
                 x['dexterity_desc'] = _dc.get('desc')
-
+        return Spell(**normed_spell)
 
     @classmethod
     def __normalize(cls, spells: dict):
