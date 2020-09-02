@@ -116,11 +116,19 @@ class Spells:
 
         normed_spell['class'] = [x['name'] for x in normed_spell.pop('classes')]
         normed_spell['desc'] = '\n'.join([line for line in normed_spell['desc']])
+        normed_spell['higher_level'] = '\n'.join([line for line in normed_spell['higher_level']])
+        normed_spell['school'] = [x['name'] for x in normed_spell.pop('school')]
+        normed_spell['subclass'] = [x['name'] for x in normed_spell.pop('subclasses')]
         for x in normed_spell:
             x['damage_type'], x['damage_at_slot_level'] = None, None
             if (_damage := x.pop('damage')):
-                x['damage_type'] = _damage.get('damage_type')
+                x['damage_type'] = _damage['damage_type']['name']
                 x['damage_at_slot_level'] = _damage.get('damage_at_slot_level')
+            x['dexterity_type'], x['dexterity_success'], x['dexterity_desc'] = None, None, None
+            if (_dc := x.pop('dc')):
+                x['dexterity_type'] = _dc['dc_type']['name']
+                x['dexterity_success'] = _dc.get('dc_success')
+                x['dexterity_desc'] = _dc.get('desc')
 
 
     @classmethod
@@ -128,10 +136,6 @@ class Spells:
         """ When spells comes from API it should be normaized before putting them into cache/database. This function does this.
         spells: {'spells': [ {'name': 'Acid Arrow', ...}, ]}
         """
-
-        # def get_all_fields(collection):
-        #     _all_fields = [list(spell.keys()) for spell in collection]
-        #     return set([field for fields in _all_fields for field in fields])
 
         _all_fields = [list(spell.keys()) for spell in spells['spells']]
         all_fields = set([field for fields in _all_fields for field in fields])
