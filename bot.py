@@ -6,7 +6,7 @@ import random
 from setup import TOKEN
 # from database import save_to_mongo, DatabaseUnavaliable
 
-from common import createLogger
+from common import createLogger, norm_query
 
 
 logger = createLogger(__name__)
@@ -75,10 +75,10 @@ def help_msg(update: Update, context: CallbackContext):
         • /spells
           Command without arguments gets all the spells of your class. If no class specified all the spells shows.
 
-        • /spells "acid arrow"
-          Command with spell name in double brackets gets the spell description if it exists.
+        • /spells acid arrow
+          Command with spell name gets the spell description if it exists.
 
-        • /spells level=2 & ritual=true | concentration=true
+        • /spells level=2 & ritual=true & concentration=true
           Command with filters and boolean *AND* operator gets satisfying spells.
 
     *Filters:*
@@ -100,7 +100,6 @@ def settings(update: Update, context: CallbackContext):
     else:
         msg = 'No class specified'
     update.message.reply_text(msg)
-
 
 @overall_logging
 def set_class(update: Update, context: CallbackContext):
@@ -126,8 +125,24 @@ def spells(update: Update, context: CallbackContext):
     user_input = context.args
     if user_input:
         update.message.reply_text(f'You typed: {user_input}')
+        # normed_input = norm_query(user_input)
+        # update.message.reply_text(f'You typed: {normed_input}')
     else:
         update.message.reply_text(f'No arguments')
+
+@overall_logging
+def spell_by_name(update: Update, context: CallbackContext):
+    """
+    /spellbyname <name>
+    """
+    pass
+
+@overall_logging
+def spell_search(update: Update, context: CallbackContext):
+    """
+    /spellsearch filter1=var1 & filter2 = var2
+    """
+    pass
 
 @overall_logging
 def error(update: Update, context: CallbackContext):
