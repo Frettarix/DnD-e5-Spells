@@ -146,6 +146,7 @@ class Spells:
     def get_spells_by(self, filters):
         if 'class' in filters:
             filters['classes'] = filters.pop('class')
+        filters = {x: filters[x].capitalize() for x in filters}
         res_spells = []
         for spell in self.__spells:
             if spell.is_fit(filters):
@@ -253,6 +254,5 @@ class Spell:
         return f'"{self.name}" (classes: {", ".join([x for x in self.classes])}; level: {self.level}; ritual: {self.ritual}; concentration: {self.concentration})'
 
 s = Spells()
-inp = ['water']
-res = s.get_spells_by_name(' '.join(inp))
+res = s.get_spells_by({'class': 'druid'})
 print(res)
