@@ -254,5 +254,5 @@ class Spell:
         return f'"{self.name}" (classes: {", ".join([x for x in self.classes])}; level: {self.level}; ritual: {self.ritual}; concentration: {self.concentration})'
 
 s = Spells()
-res = s.get_spells_by({'class': 'druid'})
+res = s.get_spells_by({'class': 'druid', 'ritual': True})
 print(res)
