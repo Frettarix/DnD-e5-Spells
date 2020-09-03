@@ -146,7 +146,10 @@ class Spells:
     def get_spells_by(self, filters):
         if 'class' in filters:
             filters['classes'] = filters.pop('class')
-        filters = {x: filters[x].capitalize() for x in filters}
+        # filters = {x: filters[x].capitalize() for x in filters if isinstance(filters[x], str)}
+        for key, val in filters.items():
+            if isinstance(val, str):
+                filters[key] = val.capitalize()
         res_spells = []
         for spell in self.__spells:
             if spell.is_fit(filters):
