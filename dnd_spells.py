@@ -34,7 +34,7 @@ class Parser(Singleton):
     """
 
     @classmethod
-    def __call__(cls, q):
+    def __call__(cls, q, _type):
         result = {}
         while q:
             field, value, q = list(cls.__parse_filter(q))
@@ -115,6 +115,10 @@ class Spells:
         self.spells = spells
         self._cursor = 0
 
+    @classmethod
+    def __update_cache(self):
+        pass
+
     @property
     def spells(self):
         return self.__spells
@@ -128,13 +132,16 @@ class Spells:
             elif isinstance(_spells[0], dict):
                 self.__spells = [self.create_spell(x) for x in _spells]
         else:
-            spells = self.__cache_carier.get_spells()
-            if not spells:
-                spells = self.__normalize(
-                    self.__api_carier.get_spells()
-                )
-                self.__cache_carier.cache(spells)
-            self.__spells = [self.create_spell(x) for x in spells['spells']]
+            if _spells == []:
+                self.__spells = []
+            else:
+                spells = self.__cache_carier.get_spells()
+                if not spells:
+                    spells = self.__normalize(
+                        self.__api_carier.get_spells()
+                    )
+                    self.__cache_carier.cache(spells)
+                self.__spells = [self.create_spell(x) for x in spells['spells']]
 
     def get_spells_by(self, filters):
         if 'class' in filters:
@@ -146,7 +153,15 @@ class Spells:
         return Spells(spells=res_spells)
 
     def get_spells_by_name(self, name):
-        return self.get_spells_by({'name': name})
+        name = ' '.join([x.capitalize() for x in name.split()])
+        if (res_spell := self.get_spells_by({'name': name})):
+            return res_spell
+        else:
+            res_spells = []
+            for s in self.spells:
+                if name in s.name:
+                    res_spells.append(s)
+            return Spells(spells=res_spells)
 
     @classmethod
     def create_spell(cls, normed_spell: dict):
@@ -168,7 +183,7 @@ class Spells:
                 normed_spell['damage_type'] = _damage_name['name']
             normed_spell['damage_at_slot_level'] = _damage.get('damage_at_slot_level')
             normed_spell['damage_at_character_level'] = _damage.get('damage_at_character_level')
-        
+
         normed_spell['dexterity_type'], normed_spell['dexterity_success'], normed_spell['dexterity_desc'] = None, None, None
         if (_dc := normed_spell.pop('dc')):
             normed_spell['dexterity_type'] = _dc['dc_type']['name']
@@ -236,3 +251,8 @@ class Spell:
     def __str__(self):
         # return f'"{self.name}": {self.classes}'
         return f'"{self.name}" (classes: {", ".join([x for x in self.classes])}; level: {self.level}; ritual: {self.ritual}; concentration: {self.concentration})'
+
+s = Spells()
+inp = ['water']
+res = s.get_spells_by_name(' '.join(inp))
+print(res)
