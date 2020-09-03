@@ -7,10 +7,11 @@ from setup import TOKEN
 # from database import save_to_mongo, DatabaseUnavaliable
 
 from common import createLogger
-from dnd_spells import Parser
+from dnd_spells import Parser, Spells, Spell
 
 
 logger = createLogger(__name__)
+spells = Spells()
 
 
 def overall_logging(handler):
@@ -130,7 +131,11 @@ def spell_by_name(update: Update, context: CallbackContext):
     """
     /spellbyname <name>
     """
-    user_input = context.args
+    user_input = ' '.join(context.args)
+    if(res := spells.get_spells_by_name(user_input)):
+        update.message.reply_text(res)
+    else:
+        update.message.reply_text('Nothing found')
     if not user_input:
         update.message.reply_text('Usage: /spellbyname <spell name>')
 
@@ -140,11 +145,15 @@ def spell_search(update: Update, context: CallbackContext):
     /spellsearch filter1=var1 & filter2 = var2
     """
     p = Parser()
-    user_input = context.args
+    user_input = ' '.join(context.args)
     if user_input:
-        update.message.reply_text(f'You typed: {user_input}')
-        parsed_input = p(" ".join([x for x in user_input]))
-        update.message.reply_text(f'I think it means: {parsed_input}')
+        if (res := spells.get_spells_by(user_input)):
+            update.message.reply_text(res)
+        else:
+            update.message.reply_text('Nothing found')
+        # update.message.reply_text(f'You typed: {user_input}')
+        # parsed_input = p(" ".join([x for x in user_input]))
+        # update.message.reply_text(f'I think it means: {parsed_input}')
     else:
         update.message.reply_text('Usage: /spellsearch filter1=var1 & filter2 = var2')
 
