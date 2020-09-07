@@ -10,6 +10,8 @@ from common import createLogger
 from dnd_spells import Parser, Spells, Spell
 
 
+magic_wand = '🪄'
+
 logger = createLogger(__name__)
 spells = Spells()
 
@@ -34,6 +36,25 @@ def overall_logging(handler):
             logger.info(log_info)
         return handler(*args, **kwargs)
     return inner
+
+def print_spell(spell: dict):
+    msg = f"""{magic_wand} *{spell['name']}*
+
+{spell['desc']}
+
+class: {', '.join([x for x in spell['classes']])}
+subclass: {', '.join([x for x in spell['subclass']])}
+school: {spell['school']}
+"""
+
+    for field in spell:
+        if field not in ['classes', 'subclass', 'school', 'desc', 'url', 'index']:
+            _val = spell[field]
+            if _val:
+                if isinstance(_val, list):
+                    _val = ', '.join([x for x in _val])
+                msg += f'{field.replace("_", " ")}: {_val}\n'
+    return msg
 
 def replay_for_class(user_class):
     bard = ['🪕', '🎸👨‍🎤']
@@ -121,7 +142,7 @@ def set_class(update: Update, context: CallbackContext):
             _msg = '\n'.join([f'• {x.capitalize()}' for x in classes])
             update.message.reply_text(f'Wrong class: {user_class}.\n\nAvaliable D&D classes: \n\n{_msg}')
             return
-        context.user_data['class'] = user_class
+        context.user_data['class'] = user_class.capitalize()
         update.message.reply_text(replay_for_class(user_class))
     except (IndexError, ValueError):
         update.message.reply_text('Usage: /class <your class>')
@@ -131,12 +152,23 @@ def spell_by_name(update: Update, context: CallbackContext):
     """
     /spellbyname <name>
     """
-    user_input = ' '.join(context.args)
-    if(res := spells.get_spells_by_name(user_input)):
-        update.message.reply_text(res)
+    user_input = context.args
+    if user_input:
+        user_input = ' '.join([x.capitalize() for x in context.args])
+        if(founded_spells := spells.get_spells_by_name(user_input)):
+            founded_spells = founded_spells.to_json()
+            if len(founded_spells) == 1:
+                update.message.reply_text(print_spell(founded_spells[0]), parse_mode=ParseMode.MARKDOWN)
+            else:
+                update.message.reply_text('\n'.join(
+                    [f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']]
+                ), parse_mode=ParseMode.MARKDOWN)
+
+            # for spell in founded_spells['spells']:
+                # update.message.reply_text(print_spell(spell), parse_mode=ParseMode.MARKDOWN)
+        else:
+            update.message.reply_text('Nothing found')
     else:
-        update.message.reply_text('Nothing found')
-    if not user_input:
         update.message.reply_text('Usage: /spellbyname <spell name>')
 
 @overall_logging
@@ -144,22 +176,34 @@ def spell_search(update: Update, context: CallbackContext):
     """
     /spellsearch filter1=var1 & filter2 = var2
     """
+
+    filters = {}
+    if (user_class := context.user_data.get("class")):
+        filters.update({'classes': user_class})
+    
     p = Parser()
-    user_input = ' '.join(context.args)
-    if user_input:
-        if (res := spells.get_spells_by(user_input)):
-            update.message.reply_text(res)
-        else:
-            update.message.reply_text('Nothing found')
-        # update.message.reply_text(f'You typed: {user_input}')
-        # parsed_input = p(" ".join([x for x in user_input]))
-        # update.message.reply_text(f'I think it means: {parsed_input}')
+
+    if (user_input := context.args):
+        parsed_input = p(' '.join([x for x in user_input]))
+        filters.update(parsed_input)
+
+    logger.debug(f'Looking for spells: {filters}')
+
+    founded_spells = spells.get_spells_by(filters)
+    logger.debug(f'Founded spells: {founded_spells}')
+    if founded_spells:
+        founded_spells = founded_spells.to_json()
+        update.message.reply_text(
+            '\n'.join(
+                [f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']]
+            ), parse_mode=ParseMode.MARKDOWN
+        )
     else:
-        update.message.reply_text('Usage: /spellsearch filter1=var1 & filter2 = var2')
+        update.message.reply_text('Nothing found')
 
 @overall_logging
 def error(update: Update, context: CallbackContext):
-    logger.warning(f'Update {update} caused error {context.error}')
+    logger.warning(f'Update {update} caused error: {context.error}')
 
 @overall_logging
 def unknown(update, context):

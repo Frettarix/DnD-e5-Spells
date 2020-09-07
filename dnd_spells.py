@@ -7,6 +7,12 @@ from common import createLogger
 
 logger = createLogger(__name__)
 
+def debug(handler):
+    def inner(*args, **kwargs):
+        logger.debug(f'In {handler.__name__}')
+        return handler(*args, **kwargs)
+    return inner
+
 class DndSpellsError(Exception):
     pass
 
@@ -34,7 +40,7 @@ class Parser(Singleton):
     """
 
     @classmethod
-    def __call__(cls, q, _type):
+    def __call__(cls, q):
         result = {}
         while q:
             field, value, q = list(cls.__parse_filter(q))
@@ -115,9 +121,11 @@ class Spells:
         self.spells = spells
         self._cursor = 0
 
-    @classmethod
-    def __update_cache(self):
-        pass
+    def update_cache(self):
+        spells = self.__normalize(
+            self.__api_carier.get_spells()
+        )
+        self.__cache_carier.cache(spells)
 
     @property
     def spells(self):
@@ -143,24 +151,28 @@ class Spells:
                     self.__cache_carier.cache(spells)
                 self.__spells = [self.create_spell(x) for x in spells['spells']]
 
+    @debug
     def get_spells_by(self, filters):
         if 'class' in filters:
             filters['classes'] = filters.pop('class')
-        # filters = {x: filters[x].capitalize() for x in filters if isinstance(filters[x], str)}
-        for key, val in filters.items():
-            if isinstance(val, str):
-                filters[key] = val.capitalize()
+        logger.debug(f'Filters: {filters}')
         res_spells = []
         for spell in self.__spells:
             if spell.is_fit(filters):
+                logger.debug(f'Found a spell: {spell}')
                 res_spells.append(spell)
         return Spells(spells=res_spells)
 
+    @debug
     def get_spells_by_name(self, name):
-        name = ' '.join([x.capitalize() for x in name.split()])
-        if (res_spell := self.get_spells_by({'name': name})):
+        logger.debug(f'Searching for {name}')
+        if isinstance(name, list):
+            name = ' '.join([x.capitalize() for x in name.split()])
+        res_spell = self.get_spells_by({'name': name})
+        if res_spell:
             return res_spell
         else:
+            logger.debug(f"Can't find a spell named {name}. Searching for something alike")
             res_spells = []
             for s in self.spells:
                 if name in s.name:
@@ -227,35 +239,42 @@ class Spells:
     def __len__(self):
         return len(self.spells)
 
+    def to_json(self):
+        res = {'spells': []}
+        for spell in self.spells:
+            res['spells'].append(spell.to_json())
+        return res
+
 class Spell:
     def __init__(self, **fields):
         for f in fields: setattr(self, f, fields[f])
 
-    def full_str(self):
-        msg = '\n'
-        for key, val in self.__dict__.items():
-            msg += f'{key}: {val}\n'
-        return msg
+    def to_json(self) -> dict:
+        return {x: self.__dict__[x] for x in self.__dict__}
 
     def is_fit(self, filter: dict):
         """
         filter = {'name': 'acid arrow'}
         filter = {'level': 1, 'concentrate': True}
         """
-        for key, val in filter.items():
-            obj_field = getattr(self, key)
-            if isinstance(obj_field, list):
-                if val not in obj_field:
+        def norm(item):
+            return str(item) if isinstance(item, int) else item
+
+        for f_key, f_val in filter.items():
+            obj_val = getattr(self, f_key)
+
+            obj_val = norm(obj_val)
+
+            if isinstance(obj_val, list):
+                for item in obj_val:
+                    item = norm(item)
+                if f_val not in obj_val:
                     return False
             else:
-                if getattr(self, key) != val:
+                if obj_val != f_val:
                     return False
         return True
 
     def __str__(self):
         # return f'"{self.name}": {self.classes}'
         return f'"{self.name}" (classes: {", ".join([x for x in self.classes])}; level: {self.level}; ritual: {self.ritual}; concentration: {self.concentration})'
-
-s = Spells()
-res = s.get_spells_by({'class': 'druid', 'ritual': True})
-print(res)
