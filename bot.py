@@ -8,13 +8,14 @@ from setup import TOKEN
 # from database import save_to_mongo, DatabaseUnavaliable
 
 from common import createLogger
-from dnd_spells import Parser, Spells, Spell
+from dnd_spells import Parser, Spells, Spell, Normalizer, CantParse
 
 
 magic_wand = '🪄'
 
 logger = createLogger(__name__)
 spells = Spells()
+norm = Normalizer()
 
 def send_message(bot, chat_id, text: str, **kwargs):
     MAX_MESSAGE_LENGTH = 4048
@@ -93,25 +94,27 @@ def replay_for_class(user_class):
     fighter = ['🗡️', '⚔️']
     paladin = [*fighter, '🛡️', '🌅']
     wizard = ['🧙', '🧙🏻', '🧙🏼', '🧙🏽', '🧙🏾', '🧙🏿', '🧙‍♂️', '🧙🏻‍♂️', '🧙🏼‍♂️', '🧙🏽‍♂️', '🧙🏾‍♂️', '🧙🏿‍♂️', '🧙‍♀️', '🧙🏻‍♀️', '🧙🏼‍♀️', '🧙🏽‍♀️', '🧙🏾‍♀️', '🧙🏿‍♀️', '⚗️', '📜', '🔮']
-    if user_class.lower() == 'bard':
+
+    user_class = norm(user_class)
+    if user_class == 'bard':
         return random.choice(bard)
-    elif user_class.lower() == 'cleric':
+    elif user_class == 'cleric':
         return random.choice(cleric)
-    elif user_class.lower() == 'barbarian':
+    elif user_class == 'barbarian':
         return random.choice(barbarian)
-    elif user_class.lower() == 'druid':
+    elif user_class == 'druid':
         return random.choice(druid)
-    elif user_class.lower() == 'monk':
+    elif user_class == 'monk':
         return random.choice(monk)
-    elif user_class.lower() == 'ranger':
+    elif user_class == 'ranger':
         return random.choice(ranger)
-    elif user_class.lower() == 'rogue':
+    elif user_class == 'rogue':
         return random.choice(rogue)
-    elif user_class.lower() == 'paladin':
+    elif user_class == 'paladin':
         return random.choice(paladin)
-    elif user_class.lower() == 'fighter':
+    elif user_class == 'fighter':
         return random.choice(fighter)
-    elif user_class.lower() in ['wizard', 'sorcerer', 'warlock']:
+    elif user_class in ['wizard', 'sorcerer', 'warlock']:
         return random.choice(wizard)
 
 @overall_logging
@@ -150,7 +153,7 @@ def help_msg(update: Update, context: CallbackContext):
 def settings(update: Update, context: CallbackContext):
     user_class = context.user_data.get("class")
     if user_class:
-        msg = f'Class: {user_class.capitalize()} {replay_for_class(user_class)}'
+        msg = f'Class: {user_class} {replay_for_class(user_class)}'
     else:
         msg = 'No class specified'
     update.message.reply_text(msg)
@@ -158,15 +161,14 @@ def settings(update: Update, context: CallbackContext):
 @overall_logging
 def set_class(update: Update, context: CallbackContext):
     # chat_id = update.message.chat_id
-    classes = [
-        'barbarian', 'bard', 'cleric', 'druid', 'fighter', 'monk', 'paladin',
-        'ranger', 'rogue', 'sorcerer', 'warlock', 'wizard']
+    classes = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin',
+        'Ranger', 'Rogue', 'Sorcerer', 'Warlock', 'Wizard']
 
     # args[0] should contain the class name
     try:
-        user_class = context.args[0].lower()
-        if user_class not in classes:
-            _msg = '\n'.join([f'• {x.capitalize()}' for x in classes])
+        user_class = norm(context.args[0])
+        if user_class not in norm(classes):
+            _msg = '\n'.join([f'• {x}' for x in classes])
             update.message.reply_text(f'Wrong class: {user_class}.\n\nAvaliable D&D classes: \n\n{_msg}')
             return
         context.user_data['class'] = user_class.capitalize()
@@ -181,13 +183,13 @@ def spell_by_name(update: Update, context: CallbackContext):
     """
     user_input = context.args
     if user_input:
-        user_input = ' '.join([x.capitalize() for x in context.args])
+        user_input = ' '.join([x for x in context.args])
         if(founded_spells := spells.get_spells_by_name(user_input)):
             founded_spells = founded_spells.to_json()
             if len(founded_spells['spells']) == 1:
                 update.message.reply_text(print_spell(founded_spells['spells'][0]), parse_mode=ParseMode.MARKDOWN)
             else:
-                msg = '\n'.join([f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']])
+                msg = '\n'.join([f'{magic_wand} {x["name"]}' for x in founded_spells['spells']])
                 send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
         else:
             update.message.reply_text('Nothing found')
@@ -209,8 +211,11 @@ def spell_search(update: Update, context: CallbackContext):
     p = Parser()
 
     if (user_input := context.args):
-        parsed_input = p(' '.join([x for x in user_input]))
-        filters.update(parsed_input)
+        try:
+            parsed_input = p(' '.join([x for x in user_input]))
+            filters.update(parsed_input)
+        except CantParse:
+            update.message.reply_text('Wrong filter to search')
 
     logger.debug(f'Looking for spells: {filters}')
 
@@ -218,7 +223,7 @@ def spell_search(update: Update, context: CallbackContext):
     logger.debug(f'Founded spells: {founded_spells}')
     if founded_spells:
         founded_spells = founded_spells.to_json()
-        msg = '\n'.join([f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']])
+        msg = '\n'.join([f'{magic_wand} {x["name"]}' for x in founded_spells['spells']])
         send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
     else:
         update.message.reply_text('Nothing found')

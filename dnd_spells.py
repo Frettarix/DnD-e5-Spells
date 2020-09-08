@@ -7,6 +7,7 @@ from common import createLogger
 
 logger = createLogger(__name__)
 
+
 def debug(handler):
     def inner(*args, **kwargs):
         logger.debug(f'In {handler.__name__}')
@@ -32,6 +33,12 @@ class Singleton():
             cls.instance = super(Singleton, cls).__new__(cls)
         return cls.instance
 
+class CantParse(DndSpellsError):
+    def __init__(self, q):
+        self.q = q
+    def __str__(self):
+        return f'Wrong query string to parse: {self.q}'
+
 class Parser(Singleton):
     """
     root ::= value
@@ -43,7 +50,10 @@ class Parser(Singleton):
     def __call__(cls, q):
         result = {}
         while q:
-            field, value, q = list(cls.__parse_filter(q))
+            try:
+                field, value, q = list(cls.__parse_filter(q))
+            except TypeError:
+                raise CantParse(q)
             result.update({field: value})
         return result
 
@@ -55,11 +65,49 @@ class Parser(Singleton):
             field, value, remainds = match.groups()
             return field.strip(), value.strip(), remainds
 
-class DBCarier(Singleton):
-    @classmethod
-    def __call__(cls):
-        print('DB Worker')
+# class DBCarier(Singleton):
+#     @classmethod
+#     def __call__(cls):
+#         print('DB Worker')
 
+class Normalizer(Singleton):
+    @classmethod
+    def __call__(cls, obj):
+        return cls.__normalize(obj)
+
+    @classmethod
+    def __normalize(cls, obj):
+        if isinstance(obj, str):
+            return cls.str_norm(obj)
+        elif isinstance(obj, int):
+            return cls.int_norm(obj)
+        elif isinstance(obj, list):
+            return cls.list_norm(obj)
+        elif isinstance(obj, dict):
+            return cls.dict_norm(obj)
+        else:
+            logger.error(f'Type {obj} is not supported')
+
+    @classmethod
+    def str_norm(cls, obj):
+        return ' '.join([x.lower() for x in obj.split()])
+
+    @classmethod
+    def int_norm(cls, obj):
+        return str(obj)
+
+    @classmethod
+    def list_norm(cls, obj):
+        res = []
+        for x in obj:
+            res.append(cls.__normalize(x))
+        return res
+
+    @classmethod
+    def dict_norm(cls, obj):
+        for x in obj:
+            obj[x] = cls.__normalize(obj[x])
+        return obj
 
 class APICarier(Singleton):
     API_SPELLS_URL = 'https://www.dnd5eapi.co/api/spells/'
@@ -114,6 +162,8 @@ class CacheCarier(Singleton):
         except IOError as e:
             logger.warning(f'Can not save token in {cls.cache_path}: {e}')
 
+norm = Normalizer()
+
 class Spells:
     def __init__(self, spells=None, cache_carier=CacheCarier()):
         self.__api_carier = APICarier()
@@ -166,16 +216,16 @@ class Spells:
     @debug
     def get_spells_by_name(self, name):
         logger.debug(f'Searching for {name}')
-        if isinstance(name, list):
-            name = ' '.join([x.capitalize() for x in name.split()])
-        res_spell = self.get_spells_by({'name': name})
+        _name = norm(name)
+
+        res_spell = self.get_spells_by({'name': _name})
         if res_spell:
             return res_spell
         else:
             logger.debug(f"Can't find a spell named {name}. Searching for something alike")
             res_spells = []
             for s in self.spells:
-                if name in s.name:
+                if _name in norm(s.name):
                     res_spells.append(s)
             return Spells(spells=res_spells)
 
@@ -257,21 +307,15 @@ class Spell:
         filter = {'name': 'acid arrow'}
         filter = {'level': 1, 'concentrate': True}
         """
-        def norm(item):
-            return str(item) if isinstance(item, int) else item
 
         for f_key, f_val in filter.items():
-            obj_val = getattr(self, f_key)
-
-            obj_val = norm(obj_val)
+            obj_val = norm(getattr(self, f_key))
 
             if isinstance(obj_val, list):
-                for item in obj_val:
-                    item = norm(item)
-                if f_val not in obj_val:
+                if norm(f_val) not in obj_val:
                     return False
             else:
-                if obj_val != f_val:
+                if norm(f_val) != obj_val:
                     return False
         return True
 
