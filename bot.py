@@ -216,6 +216,7 @@ def spell_search(update: Update, context: CallbackContext):
             filters.update(parsed_input)
         except CantParse:
             update.message.reply_text('Wrong filter to search')
+            return
 
     logger.debug(f'Looking for spells: {filters}')
 
