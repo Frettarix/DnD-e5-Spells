@@ -1,7 +1,8 @@
 import threading
-from telegram import Bot, Update, ParseMode
+from telegram import Bot, Update, ParseMode, InlineKeyboardButton
 from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater
 import random
+import time
 
 from setup import TOKEN
 # from database import save_to_mongo, DatabaseUnavaliable
@@ -15,6 +16,31 @@ magic_wand = '🪄'
 logger = createLogger(__name__)
 spells = Spells()
 
+def send_message(bot, chat_id, text: str, **kwargs):
+    MAX_MESSAGE_LENGTH = 4048
+
+    if len(text) <= MAX_MESSAGE_LENGTH:
+        return bot.send_message(chat_id, text, **kwargs)
+
+    parts = []
+    while len(text) > 0:
+        if len(text) > MAX_MESSAGE_LENGTH:
+            part = text[:MAX_MESSAGE_LENGTH]
+            first_lnbr = part.rfind('\n')
+            if first_lnbr != -1:
+                parts.append(part[:first_lnbr])
+                text = text[first_lnbr:]
+            else:
+                parts.append(part)
+                text = text[MAX_MESSAGE_LENGTH:]
+        else:
+            parts.append(text)
+            break
+    msg = None
+    for part in parts:
+        msg = bot.send_message(chat_id, part, **kwargs)
+        time.sleep(1)
+    return msg  # return only the last message
 
 def overall_logging(handler):
     def inner(*args, **kwargs):
@@ -64,8 +90,8 @@ def replay_for_class(user_class):
     monk = ['🧘', '🧘🏻', '🧘🏼', '🧘🏽', '🧘🏾', '🧘🏿', '🧘‍♂️', '🧘🏻‍♂️', '🧘🏼‍♂️', '🧘🏽‍♂️', '🧘🏾‍♂️', '🧘🏿‍♂️', '🧘‍♀️', '🧘🏻‍♀️', '🧘🏼‍♀️', '🧘🏽‍♀️', '🧘🏾‍♀️', '🧘🏿‍♀️']
     ranger = ['🏹']
     rogue = ['🔪']
-    paladin = ['🗡️', '⚔️', '🛡️', '🌅']
-    warlock = ['🗡️', '⚔️']
+    fighter = ['🗡️', '⚔️']
+    paladin = [*fighter, '🛡️', '🌅']
     wizard = ['🧙', '🧙🏻', '🧙🏼', '🧙🏽', '🧙🏾', '🧙🏿', '🧙‍♂️', '🧙🏻‍♂️', '🧙🏼‍♂️', '🧙🏽‍♂️', '🧙🏾‍♂️', '🧙🏿‍♂️', '🧙‍♀️', '🧙🏻‍♀️', '🧙🏼‍♀️', '🧙🏽‍♀️', '🧙🏾‍♀️', '🧙🏿‍♀️', '⚗️', '📜', '🔮']
     if user_class.lower() == 'bard':
         return random.choice(bard)
@@ -83,9 +109,9 @@ def replay_for_class(user_class):
         return random.choice(rogue)
     elif user_class.lower() == 'paladin':
         return random.choice(paladin)
-    elif user_class.lower() in ['warlock', 'fighter']:
-        return random.choice(warlock)
-    elif user_class.lower() in ['wizard', 'sorcerer']:
+    elif user_class.lower() == 'fighter':
+        return random.choice(fighter)
+    elif user_class.lower() in ['wizard', 'sorcerer', 'warlock']:
         return random.choice(wizard)
 
 @overall_logging
@@ -117,7 +143,8 @@ def help_msg(update: Update, context: CallbackContext):
 /settings - show user's settings
 /help - this help
     """
-    update.message.reply_text(text=help_text, parse_mode=ParseMode.MARKDOWN)
+    #update.message.reply_text(text=help_text, parse_mode=ParseMode.MARKDOWN)
+    send_message(context.bot, update.message.chat_id, text=help_text, parse_mode=ParseMode.MARKDOWN)
 
 @overall_logging
 def settings(update: Update, context: CallbackContext):
@@ -152,6 +179,7 @@ def spell_by_name(update: Update, context: CallbackContext):
     """
     /spellbyname <name>
     """
+
     user_input = context.args
     if user_input:
         user_input = ' '.join([x.capitalize() for x in context.args])
@@ -160,12 +188,8 @@ def spell_by_name(update: Update, context: CallbackContext):
             if len(founded_spells) == 1:
                 update.message.reply_text(print_spell(founded_spells[0]), parse_mode=ParseMode.MARKDOWN)
             else:
-                update.message.reply_text('\n'.join(
-                    [f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']]
-                ), parse_mode=ParseMode.MARKDOWN)
-
-            # for spell in founded_spells['spells']:
-                # update.message.reply_text(print_spell(spell), parse_mode=ParseMode.MARKDOWN)
+                msg = '\n'.join([f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']])
+                send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
         else:
             update.message.reply_text('Nothing found')
     else:
@@ -174,7 +198,9 @@ def spell_by_name(update: Update, context: CallbackContext):
 @overall_logging
 def spell_search(update: Update, context: CallbackContext):
     """
-    /spellsearch filter1=var1 & filter2 = var2
+    /spellsearch [filter1=var1 & filter2 = var2]
+
+    if no filters /spellserach returns all spells for pointed class
     """
 
     filters = {}
@@ -193,11 +219,8 @@ def spell_search(update: Update, context: CallbackContext):
     logger.debug(f'Founded spells: {founded_spells}')
     if founded_spells:
         founded_spells = founded_spells.to_json()
-        update.message.reply_text(
-            '\n'.join(
-                [f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']]
-            ), parse_mode=ParseMode.MARKDOWN
-        )
+        msg = '\n'.join([f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']])
+        send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
     else:
         update.message.reply_text('Nothing found')
 
