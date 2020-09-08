@@ -74,7 +74,7 @@ school: {spell['school']}
 """
 
     for field in spell:
-        if field not in ['classes', 'subclass', 'school', 'desc', 'url', 'index']:
+        if field not in ['name', 'classes', 'subclass', 'school', 'desc', 'url', 'index']:
             _val = spell[field]
             if _val:
                 if isinstance(_val, list):
@@ -179,14 +179,13 @@ def spell_by_name(update: Update, context: CallbackContext):
     """
     /spellbyname <name>
     """
-
     user_input = context.args
     if user_input:
         user_input = ' '.join([x.capitalize() for x in context.args])
         if(founded_spells := spells.get_spells_by_name(user_input)):
             founded_spells = founded_spells.to_json()
-            if len(founded_spells) == 1:
-                update.message.reply_text(print_spell(founded_spells[0]), parse_mode=ParseMode.MARKDOWN)
+            if len(founded_spells['spells']) == 1:
+                update.message.reply_text(print_spell(founded_spells['spells'][0]), parse_mode=ParseMode.MARKDOWN)
             else:
                 msg = '\n'.join([f'{magic_wand} *{x["name"]}*' for x in founded_spells['spells']])
                 send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
