@@ -1,6 +1,6 @@
 import threading
-from telegram import Bot, Update, ParseMode, InlineKeyboardButton
-from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater
+from telegram import Bot, Update, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater, CallbackQueryHandler
 import random
 import time
 
@@ -189,8 +189,13 @@ def spell_by_name(update: Update, context: CallbackContext):
             if len(founded_spells['spells']) == 1:
                 update.message.reply_text(print_spell(founded_spells['spells'][0]), parse_mode=ParseMode.MARKDOWN)
             else:
-                msg = '\n'.join([f'{magic_wand} {x["name"]}' for x in founded_spells['spells']])
-                send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
+                # msg = '\n'.join([f'{magic_wand} {x["name"]}' for x in founded_spells['spells']])
+                # send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
+                keyboard = []
+                for x in founded_spells['spells']:
+                    keyboard.append([InlineKeyboardButton(f'{magic_wand} {x["name"]}', callback_data=x["name"])])
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                update.message.reply_text('Founded spells:', reply_markup=reply_markup)
         else:
             update.message.reply_text('Nothing found')
     else:
@@ -224,8 +229,13 @@ def spell_search(update: Update, context: CallbackContext):
     logger.debug(f'Founded spells: {founded_spells}')
     if founded_spells:
         founded_spells = founded_spells.to_json()
-        msg = '\n'.join([f'{magic_wand} {x["name"]}' for x in founded_spells['spells']])
-        send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
+        # msg = '\n'.join([f'{magic_wand} {x["name"]}' for x in founded_spells['spells']])
+        # send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
+        keyboard = []
+        for x in founded_spells['spells']:
+            keyboard.append([InlineKeyboardButton(f'{magic_wand} {x["name"]}', callback_data=x["name"])])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.message.reply_text('Founded spells:', reply_markup=reply_markup)
     else:
         update.message.reply_text('Nothing found')
 
@@ -234,8 +244,17 @@ def error(update: Update, context: CallbackContext):
     logger.warning(f'Update {update} caused error: {context.error}')
 
 @overall_logging
-def unknown(update, context):
+def unknown(update: Update, context: CallbackContext):
     update.message.reply_text('What a spell is this? I do not know this type of magic!')
+
+# @overall_logging
+def button(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+
+    spell = spells.get_spells_by_name(query.data).to_json()['spells'][0]
+    query.edit_message_text(text=print_spell(spell), parse_mode=ParseMode.MARKDOWN)
+
 
 def main():
     bot = Bot(token=TOKEN)
@@ -247,6 +266,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler('spellsearch', spell_search, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('settings', settings))
     updater.dispatcher.add_handler(CommandHandler('help', help_msg))
+    updater.dispatcher.add_handler(CallbackQueryHandler(button))
     updater.dispatcher.add_handler(MessageHandler(Filters.command, unknown))
 
     updater.dispatcher.add_error_handler(error)
