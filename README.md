@@ -8,6 +8,8 @@ D&D Spells Bot helps you to find the best 5e spells for you awkward conditions.
 
 Send */class \<class>* message to let the bot know what is your class. Next you can search for spells using */spellnamed* and */searchspell* commands.
 
+Bot: @dnd_5e_spells_bot
+
 Author: @lisp3r
 
 Source: https://github.com/lisp3r/DnD-e5-Spells
