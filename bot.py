@@ -179,7 +179,7 @@ def set_class(update: Update, context: CallbackContext):
 @overall_logging
 def spell_by_name(update: Update, context: CallbackContext):
     """
-    /spellbyname <name>
+    /spellnamed <name>
     """
     user_input = context.args
     if user_input:
@@ -199,14 +199,14 @@ def spell_by_name(update: Update, context: CallbackContext):
         else:
             update.message.reply_text('Nothing found')
     else:
-        update.message.reply_text('Usage: /spellbyname <spell name>')
+        update.message.reply_text('Usage: /spellnamed <spell name>')
 
 @overall_logging
 def spell_search(update: Update, context: CallbackContext):
     """
-    /spellsearch [filter1=var1 & filter2 = var2]
+    /searchspell [filter1=var1 & filter2 = var2]
 
-    if no filters /spellserach returns all spells for pointed class
+    if no filters /searchspell returns all spells for pointed class
     """
 
     filters = {}
