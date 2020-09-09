@@ -119,22 +119,22 @@ def replay_for_class(user_class):
 
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
-    help_text = """/class <your class> - set your class
-/spellbyname <spell name>
+    help_text = """/setclass <your class> - set your class
+/spellnamed <spell name>
 
     *Examples:*
 
-        • /spellbyname acid arrow
+        • /spellnamed acid arrow
           Command returns Acid Arrow full description
 
-        • /spellbyname acid
+        • /spellnamed acid
           Command returns links to all the spells with 'acid' in name
 
-/spellsearch <filters>
+/searchspell <filters>
 
     *Examples:*
 
-        • /spellsearch level=2 & ritual=true
+        • /searchspell level=2 & ritual=true
           Command with filters and boolean *AND* operator gets satisfying spells.
 
     *Filters:*
@@ -262,7 +262,7 @@ def main():
 
     updater.dispatcher.add_handler(CommandHandler('start', help_msg))
     updater.dispatcher.add_handler(CommandHandler('setclass', set_class, pass_args=True))
-    updater.dispatcher.add_handler(CommandHandler('searchspellbyname', spell_by_name, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('spellnamed', spell_by_name, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('searchspell', spell_search, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('settings', settings))
     updater.dispatcher.add_handler(CommandHandler('help', help_msg))

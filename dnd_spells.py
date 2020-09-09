@@ -79,6 +79,8 @@ class Normalizer(Singleton):
     def __normalize(cls, obj):
         if isinstance(obj, str):
             return cls.str_norm(obj)
+        elif isinstance(obj, bool):
+            return cls.bool_norm(obj)
         elif isinstance(obj, int):
             return cls.int_norm(obj)
         elif isinstance(obj, list):
@@ -108,6 +110,10 @@ class Normalizer(Singleton):
         for x in obj:
             obj[x] = cls.__normalize(obj[x])
         return obj
+
+    @classmethod
+    def bool_norm(cls, obj):
+        return cls.str_norm(str(obj))
 
 class APICarier(Singleton):
     API_SPELLS_URL = 'https://www.dnd5eapi.co/api/spells/'
