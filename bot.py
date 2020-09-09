@@ -261,9 +261,9 @@ def main():
     updater = Updater(bot=bot, use_context=True)
 
     updater.dispatcher.add_handler(CommandHandler('start', help_msg))
-    updater.dispatcher.add_handler(CommandHandler('class', set_class, pass_args=True))
-    updater.dispatcher.add_handler(CommandHandler('spellbyname', spell_by_name, pass_args=True))
-    updater.dispatcher.add_handler(CommandHandler('spellsearch', spell_search, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('setclass', set_class, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('searchspellbyname', spell_by_name, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('searchspell', spell_search, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('settings', settings))
     updater.dispatcher.add_handler(CommandHandler('help', help_msg))
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
