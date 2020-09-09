@@ -119,7 +119,7 @@ def replay_for_class(user_class):
 
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
-    help_text = """/setclass <your class> - set your class
+    help_text = """/class <your class> - set your class
 /spellnamed <spell name>
 
     *Examples:*
@@ -261,7 +261,7 @@ def main():
     updater = Updater(bot=bot, use_context=True)
 
     updater.dispatcher.add_handler(CommandHandler('start', help_msg))
-    updater.dispatcher.add_handler(CommandHandler('setclass', set_class, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('class', set_class, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('spellnamed', spell_by_name, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('searchspell', spell_search, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('settings', settings))
