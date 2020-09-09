@@ -1,10 +1,11 @@
 import threading
-from telegram import Bot, Update, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater, CallbackQueryHandler
 import random
 import time
+import json
 
 from setup import TOKEN
+from telegram import Bot, Update, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater, CallbackQueryHandler
 # from database import save_to_mongo, DatabaseUnavaliable
 
 from common import createLogger
@@ -14,6 +15,8 @@ from dnd_spells import Parser, Spells, Spell, Normalizer, CantParse
 magic_wand = '🪄'
 
 logger = createLogger(__name__)
+with open('reources/class_icons.json', 'r') as class_icons_file:
+    class_icons = json.load(class_icons_file)
 spells = Spells()
 norm = Normalizer()
 
@@ -84,38 +87,9 @@ school: {spell['school']}
     return msg
 
 def replay_for_class(user_class):
-    bard = ['🪕', '🎸👨‍🎤']
-    cleric = ['🙏']
-    druid = ['🌿', '🌱', '🍄']
-    barbarian = ['🪓', '🤬']
-    monk = ['🧘', '🧘🏻', '🧘🏼', '🧘🏽', '🧘🏾', '🧘🏿', '🧘‍♂️', '🧘🏻‍♂️', '🧘🏼‍♂️', '🧘🏽‍♂️', '🧘🏾‍♂️', '🧘🏿‍♂️', '🧘‍♀️', '🧘🏻‍♀️', '🧘🏼‍♀️', '🧘🏽‍♀️', '🧘🏾‍♀️', '🧘🏿‍♀️']
-    ranger = ['🏹']
-    rogue = ['🔪']
-    fighter = ['🗡️', '⚔️']
-    paladin = [*fighter, '🛡️', '🌅']
-    wizard = ['🧙', '🧙🏻', '🧙🏼', '🧙🏽', '🧙🏾', '🧙🏿', '🧙‍♂️', '🧙🏻‍♂️', '🧙🏼‍♂️', '🧙🏽‍♂️', '🧙🏾‍♂️', '🧙🏿‍♂️', '🧙‍♀️', '🧙🏻‍♀️', '🧙🏼‍♀️', '🧙🏽‍♀️', '🧙🏾‍♀️', '🧙🏿‍♀️', '⚗️', '📜', '🔮']
-
     user_class = norm(user_class)
-    if user_class == 'bard':
-        return random.choice(bard)
-    elif user_class == 'cleric':
-        return random.choice(cleric)
-    elif user_class == 'barbarian':
-        return random.choice(barbarian)
-    elif user_class == 'druid':
-        return random.choice(druid)
-    elif user_class == 'monk':
-        return random.choice(monk)
-    elif user_class == 'ranger':
-        return random.choice(ranger)
-    elif user_class == 'rogue':
-        return random.choice(rogue)
-    elif user_class == 'paladin':
-        return random.choice(paladin)
-    elif user_class == 'fighter':
-        return random.choice(fighter)
-    elif user_class in ['wizard', 'sorcerer', 'warlock']:
-        return random.choice(wizard)
+    return random.choice(
+        class_icons.get(user_class, class_icons['default']))
 
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
