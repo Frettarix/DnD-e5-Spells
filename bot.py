@@ -119,21 +119,29 @@ def replay_for_class(user_class):
 
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
-    help_text = """/class <your class> - set your class
+    help_text = """/class [your class]
+    *Examples:*
+
+        • /class
+          Reset saved class
+        • /class <class>
+          Set class
+
 /spellnamed <spell name>
 
     *Examples:*
 
         • /spellnamed acid arrow
           Command returns Acid Arrow full description
-
         • /spellnamed acid
           Command returns links to all the spells with 'acid' in name
 
-/searchspell <filters>
+/searchspell [filters]
 
     *Examples:*
 
+        • /searchspell
+          Returns all spells for your class if specified or all spells
         • /searchspell level=2 & ritual=true
           Command with filters and boolean *AND* operator gets satisfying spells.
 
@@ -174,7 +182,8 @@ def set_class(update: Update, context: CallbackContext):
         context.user_data['class'] = user_class.capitalize()
         update.message.reply_text(replay_for_class(user_class))
     except (IndexError, ValueError):
-        update.message.reply_text('Usage: /class <your class>')
+        context.user_data["class"] = None
+        update.message.reply_text('No class specified\nTo set a class: /class <your class>')
 
 @overall_logging
 def spell_by_name(update: Update, context: CallbackContext):
@@ -189,8 +198,6 @@ def spell_by_name(update: Update, context: CallbackContext):
             if len(founded_spells['spells']) == 1:
                 update.message.reply_text(print_spell(founded_spells['spells'][0]), parse_mode=ParseMode.MARKDOWN)
             else:
-                # msg = '\n'.join([f'{magic_wand} {x["name"]}' for x in founded_spells['spells']])
-                # send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
                 keyboard = []
                 for x in founded_spells['spells']:
                     keyboard.append([InlineKeyboardButton(f'{magic_wand} {x["name"]}', callback_data=x["name"])])
@@ -225,17 +232,14 @@ def spell_search(update: Update, context: CallbackContext):
 
     logger.debug(f'Looking for spells: {filters}')
 
-    founded_spells = spells.get_spells_by(filters)
-    logger.debug(f'Founded spells: {founded_spells}')
-    if founded_spells:
-        founded_spells = founded_spells.to_json()
-        # msg = '\n'.join([f'{magic_wand} {x["name"]}' for x in founded_spells['spells']])
-        # send_message(context.bot, update.message.chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
-        keyboard = []
-        for x in founded_spells['spells']:
-            keyboard.append([InlineKeyboardButton(f'{magic_wand} {x["name"]}', callback_data=x["name"])])
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        update.message.reply_text('Founded spells:', reply_markup=reply_markup)
+    found_spells = spells.get_spells_by(filters)
+    logger.debug(f'Founded spells: {found_spells}')
+    if found_spells:
+        found_spells = found_spells.to_json()
+        out = {f'{magic_wand} {x["name"]}': x["name"] for x in found_spells['spells']}
+        # logger.debug(update.message)
+        context.chat_data['chat_id'] = update.message.chat_id
+        send_msg_with_inline(context, 'Found spells:', out)
     else:
         update.message.reply_text('Nothing found')
 
@@ -247,13 +251,35 @@ def error(update: Update, context: CallbackContext):
 def unknown(update: Update, context: CallbackContext):
     update.message.reply_text('What a spell is this? I do not know this type of magic!')
 
-# @overall_logging
+# TODO: rewrite it
+def send_msg_with_inline(context, msg, out: dict, remains_msg='...'):
+    context.chat_data['remains'] = None
+    context.chat_data['remains_msg'] = None
+    if len(out) <= 100:
+        send_options = out
+        remain_options = None
+    else:
+        send_options = dict(list(out.items())[:99])
+        remain_options = dict(list(out.items())[99:])
+
+    keyboard = []
+    for name, data in send_options.items():
+        keyboard.append([InlineKeyboardButton(name, callback_data=data)])
+    if remain_options:
+        context.chat_data['remains'] = remain_options
+        context.chat_data['remains_msg'] = msg
+        keyboard.append([InlineKeyboardButton(remains_msg, callback_data='IN_PROGRESS')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    send_message(context.bot, context.chat_data['chat_id'], msg, reply_markup=reply_markup)
+
 def button(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
-
-    spell = spells.get_spells_by_name(query.data).to_json()['spells'][0]
-    query.edit_message_text(text=print_spell(spell), parse_mode=ParseMode.MARKDOWN)
+    if query.data != 'IN_PROGRESS':
+        spell = spells.get_spells_by_name(query.data).to_json()['spells'][0]
+        query.edit_message_text(text=print_spell(spell), parse_mode=ParseMode.MARKDOWN)
+    else:
+        send_msg_with_inline(context, context.chat_data['remains_msg'], context.chat_data['remains'])
 
 
 def main():

@@ -215,7 +215,7 @@ class Spells:
         res_spells = []
         for spell in self.__spells:
             if spell.is_fit(filters):
-                logger.debug(f'Found a spell: {spell}')
+                # logger.debug(f'Found a spell: {spell}')
                 res_spells.append(spell)
         return Spells(spells=res_spells)
 
