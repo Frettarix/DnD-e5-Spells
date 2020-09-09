@@ -119,29 +119,29 @@ def replay_for_class(user_class):
 
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
-    help_text = """/class [your class]
+    help_text = """/class [class]
     *Examples:*
 
         • /class
           Reset saved class
-        • /class <class>
-          Set class
+        • /class warlock
+          Set class Warlock
 
 /spellnamed <spell name>
 
     *Examples:*
 
         • /spellnamed acid arrow
-          Command returns Acid Arrow full description
+          Return Acid Arrow full description
         • /spellnamed acid
-          Command returns links to all the spells with 'acid' in name
+          Return links to all the spells with 'acid' in name
 
 /searchspell [filters]
 
     *Examples:*
 
         • /searchspell
-          Returns all spells for your class if specified or all spells
+          Return all spells for your class if specified or all spells
         • /searchspell level=2 & ritual=true
           Command with filters and boolean *AND* operator gets satisfying spells.
 
