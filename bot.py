@@ -210,7 +210,7 @@ def spell_search(update: Update, context: CallbackContext):
     logger.debug(f'Looking for spells: {filters}')
 
     found_spells = spells.get_spells_by(filters)
-    logger.debug(f'Founded spells: {", ".join([x for x in found_spells])}')
+    logger.debug(f'Founded spells: {", ".join([x.name for x in found_spells])}')
     if found_spells:
         found_spells_to_inline = {f'{spell.str_nice()}': spell.name for spell in found_spells}
         context.chat_data['chat_id'] = update.message.chat_id
