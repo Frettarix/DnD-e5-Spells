@@ -10,9 +10,9 @@ Send */class \<class>* message to let the bot know what is your class. Next you 
 
 Bot: [@dnd_5e_spells_bot](https://t.me/dnd_5e_spells_bot)
 
-Author: @lisp3r
+Author: [@lisp3r](https://t.me/lisp3r)
 
-Source: https://github.com/lisp3r/DnD-e5-Spells
+Source: [DnD-e5-Spells](https://github.com/lisp3r/DnD-e5-Spells)
 
 ## Usage
 

@@ -68,15 +68,14 @@ def overall_logging(handler):
     return inner
 
 def detailed_spell(spell: Spell):
-    msg = f"""
-        {spell.str_nice()}
+    msg = '\n'.join(line.lstrip() for line in f"""{spell.str_nice()}
 
         {spell.desc}
 
         class: {', '.join([x for x in spell.classes])}
         subclass: {', '.join([x for x in spell.subclass])}
-        school: {spell.school}
-        """
+        school: {spell.school}""".split('\n'))
+
     spell_json = spell.to_json()
     for field in spell_json:
         if field not in ['name', 'classes', 'subclass', 'school', 'desc', 'url', 'index']:
@@ -85,7 +84,7 @@ def detailed_spell(spell: Spell):
                 if isinstance(_val, list):
                     _val = ', '.join([x for x in _val])
                 msg += f'{field.replace("_", " ")}: {_val}\n'
-    return dedent(msg)
+    return msg
 
 def replay_for_class(user_class):
     user_class = norm(user_class)
@@ -95,12 +94,14 @@ def replay_for_class(user_class):
 def help_msg(update: Update, context: CallbackContext):
     help_text = """
                 /class [class]
-                *Examples:*
 
-                    • /class
-                    Reset saved class
-                    • /class warlock
-                    Set class Warlock
+                    *Examples:*
+
+                        • /class
+                        Reset saved class
+
+                        • /class warlock
+                        Set class Warlock
 
                 /spellnamed <spell name>
 
@@ -108,6 +109,7 @@ def help_msg(update: Update, context: CallbackContext):
 
                         • /spellnamed acid arrow
                         Return Acid Arrow full description
+
                         • /spellnamed acid
                         Return links to all the spells with 'acid' in name
 
@@ -117,6 +119,7 @@ def help_msg(update: Update, context: CallbackContext):
 
                         • /spellsearch
                         Return all spells for your class if specified or all spells
+
                         • /spellsearch level=2 & ritual=true
                         Command with filters and boolean *AND* operator gets satisfying spells.
 
@@ -127,6 +130,7 @@ def help_msg(update: Update, context: CallbackContext):
                         • concentration _bool_
 
                 /settings - show user's settings
+
                 /help - this help
                 """
     send_message(context.bot, update.message.chat_id, text=dedent(help_text), parse_mode=ParseMode.MARKDOWN)
@@ -249,7 +253,6 @@ def button(update: Update, context: CallbackContext):
     query.answer()
     if query.data != 'IN_PROGRESS':
         spell = spells.get_spells_by_name(query.data).spells[0]
-        # spell = spells.get_spells_by_name(query.data).to_json()['spells'][0]
         query.edit_message_text(text=detailed_spell(spell), parse_mode=ParseMode.MARKDOWN)
     else:
         send_message_with_inline(context, context.chat_data['remains_msg'], context.chat_data['remains'])
