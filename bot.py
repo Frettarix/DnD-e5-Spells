@@ -3,6 +3,7 @@ from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandle
 import random
 import time
 import json
+from textwrap import dedent
 
 from setup import TOKEN
 from telegram import Bot, Update, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
@@ -12,8 +13,6 @@ from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandle
 from common import createLogger
 from dnd_spells import Parser, Spells, Spell, Normalizer, CantParse
 
-
-magic_wand = '🪄'
 
 logger = createLogger(__name__)
 with open('class_icons.json', 'r') as class_icons_file:
@@ -68,24 +67,25 @@ def overall_logging(handler):
         return handler(*args, **kwargs)
     return inner
 
-def print_spell(spell: dict):
-    msg = f"""{magic_wand} *{spell['name']}*
+def detailed_spell(spell: Spell):
+    msg = f"""
+        {spell.str_nice()}
 
-{spell['desc']}
+        {spell.desc}
 
-class: {', '.join([x for x in spell['classes']])}
-subclass: {', '.join([x for x in spell['subclass']])}
-school: {spell['school']}
-"""
-
-    for field in spell:
+        class: {', '.join([x for x in spell.classes])}
+        subclass: {', '.join([x for x in spell.subclass])}
+        school: {spell.school}
+        """
+    spell_json = spell.to_json()
+    for field in spell_json:
         if field not in ['name', 'classes', 'subclass', 'school', 'desc', 'url', 'index']:
-            _val = spell[field]
+            _val = spell_json[field]
             if _val:
                 if isinstance(_val, list):
                     _val = ', '.join([x for x in _val])
                 msg += f'{field.replace("_", " ")}: {_val}\n'
-    return msg
+    return dedent(msg)
 
 def replay_for_class(user_class):
     user_class = norm(user_class)
@@ -93,42 +93,43 @@ def replay_for_class(user_class):
 
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
-    help_text = """/class [class]
-    *Examples:*
+    help_text = """
+                /class [class]
+                *Examples:*
 
-        • /class
-          Reset saved class
-        • /class warlock
-          Set class Warlock
+                    • /class
+                    Reset saved class
+                    • /class warlock
+                    Set class Warlock
 
-/spellnamed <spell name>
+                /spellnamed <spell name>
 
-    *Examples:*
+                    *Examples:*
 
-        • /spellnamed acid arrow
-          Return Acid Arrow full description
-        • /spellnamed acid
-          Return links to all the spells with 'acid' in name
+                        • /spellnamed acid arrow
+                        Return Acid Arrow full description
+                        • /spellnamed acid
+                        Return links to all the spells with 'acid' in name
 
-/spellsearch [filters]
+                /spellsearch [filters]
 
-    *Examples:*
+                    *Examples:*
 
-        • /spellsearch
-          Return all spells for your class if specified or all spells
-        • /spellsearch level=2 & ritual=true
-          Command with filters and boolean *AND* operator gets satisfying spells.
+                        • /spellsearch
+                        Return all spells for your class if specified or all spells
+                        • /spellsearch level=2 & ritual=true
+                        Command with filters and boolean *AND* operator gets satisfying spells.
 
-    *Filters:*
+                    *Filters:*
 
-        • level _int_
-        • ritual _bool_
-        • concentration _bool_
+                        • level _int_
+                        • ritual _bool_
+                        • concentration _bool_
 
-/settings - show user's settings
-/help - this help
-    """
-    send_message(context.bot, update.message.chat_id, text=help_text, parse_mode=ParseMode.MARKDOWN)
+                /settings - show user's settings
+                /help - this help
+                """
+    send_message(context.bot, update.message.chat_id, text=dedent(help_text), parse_mode=ParseMode.MARKDOWN)
 
 @overall_logging
 def settings(update: Update, context: CallbackContext):
@@ -166,15 +167,14 @@ def spell_by_name(update: Update, context: CallbackContext):
     """
     user_input = context.args
     if user_input:
-        user_input = ' '.join([x for x in context.args])
-        if(founded_spells := spells.get_spells_by_name(user_input)):
-            founded_spells = founded_spells.to_json()
-            if len(founded_spells['spells']) == 1:
-                update.message.reply_text(print_spell(founded_spells['spells'][0]), parse_mode=ParseMode.MARKDOWN)
+        user_input = ' '.join([arg for arg in context.args])
+        if(found_spells := spells.get_spells_by_name(user_input)):
+            if len(found_spells) == 1:
+                update.message.reply_text(detailed_spell(found_spells.spells[0]), parse_mode=ParseMode.MARKDOWN)
             else:
                 keyboard = []
-                for x in founded_spells['spells']:
-                    keyboard.append([InlineKeyboardButton(f'{magic_wand} {x["name"]}', callback_data=x["name"])])
+                for spell in found_spells:
+                    keyboard.append([InlineKeyboardButton(f'{spell.str_nice()}', callback_data=spell.name)])
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 update.message.reply_text('Founded spells:', reply_markup=reply_markup)
         else:
@@ -248,8 +248,9 @@ def button(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
     if query.data != 'IN_PROGRESS':
-        spell = spells.get_spells_by_name(query.data).to_json()['spells'][0]
-        query.edit_message_text(text=print_spell(spell), parse_mode=ParseMode.MARKDOWN)
+        spell = spells.get_spells_by_name(query.data).spells[0]
+        # spell = spells.get_spells_by_name(query.data).to_json()['spells'][0]
+        query.edit_message_text(text=detailed_spell(spell), parse_mode=ParseMode.MARKDOWN)
     else:
         send_message_with_inline(context, context.chat_data['remains_msg'], context.chat_data['remains'])
 
