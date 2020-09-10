@@ -175,7 +175,7 @@ class Spells:
         self.__api_carier = APICarier()
         self.__cache_carier = cache_carier
         self.spells = spells
-        self._cursor = 0
+        self._cursor = -1
 
     def update_cache(self):
         spells = self.__normalize(
@@ -281,12 +281,14 @@ class Spells:
         return normalized_spells
 
     def __iter__(self):
+        self._cursor = -1
         return self
 
     def __next__(self):
         if self._cursor + 1 >= len(self.__spells):
             raise StopIteration()
         self._cursor += 1
+        return self.spells[self._cursor]
 
     def __str__(self):
         msg = '\n'.join([x.__str__() for x in self.__spells])
@@ -325,6 +327,9 @@ class Spell:
                     return False
         return True
 
+    def str_nice(self):
+        magic_wand = '🪄'
+        return f'{magic_wand}  {self.__str__()}'
+
     def __str__(self):
-        # return f'"{self.name}": {self.classes}'
-        return f'"{self.name}" (classes: {", ".join([x for x in self.classes])}; level: {self.level}; ritual: {self.ritual}; concentration: {self.concentration})'
+        return f'{self.name}'

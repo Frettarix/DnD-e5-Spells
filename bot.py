@@ -2,8 +2,11 @@ from telegram import Bot, Update, ParseMode, InlineKeyboardButton, InlineKeyboar
 from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater, CallbackQueryHandler
 import random
 import time
+import json
 
 from setup import TOKEN
+from telegram import Bot, Update, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackContext, CommandHandler, Filters, MessageHandler, Updater, CallbackQueryHandler
 # from database import save_to_mongo, DatabaseUnavaliable
 
 from common import createLogger
@@ -13,6 +16,8 @@ from dnd_spells import Parser, Spells, Spell, Normalizer, CantParse
 magic_wand = '🪄'
 
 logger = createLogger(__name__)
+with open('class_icons.json', 'r') as class_icons_file:
+    class_icons = json.load(class_icons_file)
 spells = Spells()
 norm = Normalizer()
 
@@ -83,38 +88,8 @@ school: {spell['school']}
     return msg
 
 def replay_for_class(user_class):
-    bard = ['🪕', '🎸👨‍🎤']
-    cleric = ['🙏']
-    druid = ['🌿', '🌱', '🍄']
-    barbarian = ['🪓', '🤬']
-    monk = ['🧘', '🧘🏻', '🧘🏼', '🧘🏽', '🧘🏾', '🧘🏿', '🧘‍♂️', '🧘🏻‍♂️', '🧘🏼‍♂️', '🧘🏽‍♂️', '🧘🏾‍♂️', '🧘🏿‍♂️', '🧘‍♀️', '🧘🏻‍♀️', '🧘🏼‍♀️', '🧘🏽‍♀️', '🧘🏾‍♀️', '🧘🏿‍♀️']
-    ranger = ['🏹']
-    rogue = ['🔪']
-    fighter = ['🗡️', '⚔️']
-    paladin = [*fighter, '🛡️', '🌅']
-    wizard = ['🧙', '🧙🏻', '🧙🏼', '🧙🏽', '🧙🏾', '🧙🏿', '🧙‍♂️', '🧙🏻‍♂️', '🧙🏼‍♂️', '🧙🏽‍♂️', '🧙🏾‍♂️', '🧙🏿‍♂️', '🧙‍♀️', '🧙🏻‍♀️', '🧙🏼‍♀️', '🧙🏽‍♀️', '🧙🏾‍♀️', '🧙🏿‍♀️', '⚗️', '📜', '🔮']
-
     user_class = norm(user_class)
-    if user_class == 'bard':
-        return random.choice(bard)
-    elif user_class == 'cleric':
-        return random.choice(cleric)
-    elif user_class == 'barbarian':
-        return random.choice(barbarian)
-    elif user_class == 'druid':
-        return random.choice(druid)
-    elif user_class == 'monk':
-        return random.choice(monk)
-    elif user_class == 'ranger':
-        return random.choice(ranger)
-    elif user_class == 'rogue':
-        return random.choice(rogue)
-    elif user_class == 'paladin':
-        return random.choice(paladin)
-    elif user_class == 'fighter':
-        return random.choice(fighter)
-    elif user_class in ['wizard', 'sorcerer', 'warlock']:
-        return random.choice(wizard)
+    return random.choice(class_icons.get(user_class, class_icons['default']))
 
 @overall_logging
 def help_msg(update: Update, context: CallbackContext):
@@ -135,13 +110,13 @@ def help_msg(update: Update, context: CallbackContext):
         • /spellnamed acid
           Return links to all the spells with 'acid' in name
 
-/searchspell [filters]
+/spellsearch [filters]
 
     *Examples:*
 
-        • /searchspell
+        • /spellsearch
           Return all spells for your class if specified or all spells
-        • /searchspell level=2 & ritual=true
+        • /spellsearch level=2 & ritual=true
           Command with filters and boolean *AND* operator gets satisfying spells.
 
     *Filters:*
@@ -153,7 +128,6 @@ def help_msg(update: Update, context: CallbackContext):
 /settings - show user's settings
 /help - this help
     """
-    #update.message.reply_text(text=help_text, parse_mode=ParseMode.MARKDOWN)
     send_message(context.bot, update.message.chat_id, text=help_text, parse_mode=ParseMode.MARKDOWN)
 
 @overall_logging
@@ -167,11 +141,12 @@ def settings(update: Update, context: CallbackContext):
 
 @overall_logging
 def set_class(update: Update, context: CallbackContext):
-    # chat_id = update.message.chat_id
+    """
+    /class [class]
+    """
     classes = ['Barbarian', 'Bard', 'Cleric', 'Druid', 'Fighter', 'Monk', 'Paladin',
         'Ranger', 'Rogue', 'Sorcerer', 'Warlock', 'Wizard']
 
-    # args[0] should contain the class name
     try:
         user_class = norm(context.args[0])
         if user_class not in norm(classes):
@@ -210,9 +185,8 @@ def spell_by_name(update: Update, context: CallbackContext):
 @overall_logging
 def spell_search(update: Update, context: CallbackContext):
     """
-    /searchspell [filter1=var1 & filter2 = var2]
-
-    if no filters /searchspell returns all spells for pointed class
+    /spellsearch [filter1=var1 & filter2 = var2]
+    if no filters /spellsearch returns all spells for pointed class
     """
 
     filters = {}
@@ -232,13 +206,11 @@ def spell_search(update: Update, context: CallbackContext):
     logger.debug(f'Looking for spells: {filters}')
 
     found_spells = spells.get_spells_by(filters)
-    logger.debug(f'Founded spells: {found_spells}')
+    logger.debug(f'Founded spells: {", ".join([x for x in found_spells])}')
     if found_spells:
-        found_spells = found_spells.to_json()
-        out = {f'{magic_wand} {x["name"]}': x["name"] for x in found_spells['spells']}
-        # logger.debug(update.message)
+        found_spells_to_inline = {f'{spell.str_nice()}': spell.name for spell in found_spells}
         context.chat_data['chat_id'] = update.message.chat_id
-        send_msg_with_inline(context, 'Found spells:', out)
+        send_message_with_inline(context, 'Found spells:', found_spells_to_inline)
     else:
         update.message.reply_text('Nothing found')
 
@@ -251,15 +223,16 @@ def unknown(update: Update, context: CallbackContext):
     update.message.reply_text('What a spell is this? I do not know this type of magic!')
 
 # TODO: rewrite it
-def send_msg_with_inline(context, msg, out: dict, remains_msg='...'):
+def send_message_with_inline(context, msg, inline_buttons: dict, remains_msg='...'):
     context.chat_data['remains'] = None
     context.chat_data['remains_msg'] = None
-    if len(out) <= 100:
-        send_options = out
+
+    if len(inline_buttons) <= 100:
+        send_options = inline_buttons
         remain_options = None
     else:
-        send_options = dict(list(out.items())[:99])
-        remain_options = dict(list(out.items())[99:])
+        send_options = dict(list(inline_buttons.items())[:99])
+        remain_options = dict(list(inline_buttons.items())[99:])
 
     keyboard = []
     for name, data in send_options.items():
@@ -278,7 +251,7 @@ def button(update: Update, context: CallbackContext):
         spell = spells.get_spells_by_name(query.data).to_json()['spells'][0]
         query.edit_message_text(text=print_spell(spell), parse_mode=ParseMode.MARKDOWN)
     else:
-        send_msg_with_inline(context, context.chat_data['remains_msg'], context.chat_data['remains'])
+        send_message_with_inline(context, context.chat_data['remains_msg'], context.chat_data['remains'])
 
 
 def main():
@@ -288,7 +261,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler('start', help_msg))
     updater.dispatcher.add_handler(CommandHandler('class', set_class, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('spellnamed', spell_by_name, pass_args=True))
-    updater.dispatcher.add_handler(CommandHandler('searchspell', spell_search, pass_args=True))
+    updater.dispatcher.add_handler(CommandHandler('spellsearch', spell_search, pass_args=True))
     updater.dispatcher.add_handler(CommandHandler('settings', settings))
     updater.dispatcher.add_handler(CommandHandler('help', help_msg))
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
