@@ -83,7 +83,7 @@ def detailed_spell(spell: Spell):
             if _val:
                 if isinstance(_val, list):
                     _val = ', '.join([x for x in _val])
-                msg += f'{field.replace("_", " ")}: {_val}\n'
+                msg += f'\n{field.replace("_", " ")}: {_val}'
     return msg
 
 def replay_for_class(user_class):
