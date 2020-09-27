@@ -10,7 +10,7 @@ logger = createLogger(__name__)
 
 def debug(handler):
     def inner(*args, **kwargs):
-        logger.debug(f'In {handler.__name__}')
+        logger.debug(f'In {handler.__name__}()')
         return handler(*args, **kwargs)
     return inner
 
@@ -208,7 +208,18 @@ class Spells:
                 self.__spells = [self.create_spell(x) for x in spells['spells']]
 
     @debug
+    def search_by_desc(self, search_strings):
+        res_spells = []
+        for spell in self.__spells:
+            if spell.desc.lower().find(search_strings.lower()) != -1 or spell.name.lower().find(search_strings.lower()) != -1:
+                res_spells.append(spell)
+                logger.debug(f'Found a spell: {spell}')
+        return Spells(spells=res_spells)
+
+    @debug
     def get_spells_by(self, filters):
+        if 'desc_search' in filters:
+            return self.search_by_desc(filters['desc_search'])
         if 'class' in filters:
             filters['classes'] = filters.pop('class')
         logger.debug(f'Filters: {filters}')

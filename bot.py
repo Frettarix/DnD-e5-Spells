@@ -59,7 +59,7 @@ def overall_logging(handler):
                     'text': update.message.text,
                 },
                 'user': {
-                    'user_id': update.effective_user.id,
+                'user_id': update.effective_user.id,
                     'username': update.effective_user.username
                 }
             }
@@ -200,12 +200,13 @@ def spell_search(update: Update, context: CallbackContext):
     p = Parser()
 
     if (user_input := context.args):
+        user_input = ' '.join([x for x in user_input])
         try:
-            parsed_input = p(' '.join([x for x in user_input]))
-            filters.update(parsed_input)
+            filters.update(p(user_input))
         except CantParse:
-            update.message.reply_text('Wrong filter to search')
-            return
+            filters.update({'desc_search': user_input})
+            # update.message.reply_text('Wrong filter to search')
+            # return
 
     logger.debug(f'Looking for spells: {filters}')
 
