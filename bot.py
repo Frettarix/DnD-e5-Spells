@@ -123,6 +123,9 @@ def help_msg(update: Update, context: CallbackContext):
                         • /spellsearch level=2 & ritual=true
                         Command with filters and boolean *AND* operator gets satisfying spells.
 
+                        • /spellsearch keyword or sentence
+                        Return all spells with the word or sentence in their descriptions.
+
                     *Filters:*
 
                         • level _int_
